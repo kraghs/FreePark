@@ -1,0 +1,11 @@
+let parkingSpots = [
+  // Aarhus
+  {name: "Tangkrogen", info: "Parkering ved strand/park — ofte gratis", lat: 56.1520, lng: 10.2030},
+  {name: "Aarhus – periferi / boliggader", info: "Muligt gratis gadeparkering (tjek skilte)", lat: 56.1620, lng: 10.2035},
+  {name: "Aarhus – kommunalt p‑hus (muligt billig/gratis udenfor peak)", info: "Se åbningstid og skilte", lat: 56.1510, lng: 10.1990},
+
+  // København (eksempel — kræver kontroll på skilte!)
+  {name: "København – tidsbegrænset zone (boligområde)", info: "Gratis med p‑skive — tjek skilte", lat: 55.6850, lng: 12.5650},
+  {name: "København – omegn / ydre zone", info: "Mulig billig/tidsbegrænset parkering", lat: 55.7000, lng: 12.4500},
+  {name: "København – alternativ park & ride zone", info: "Brug tog/bus fra her", lat: 55.7400, lng: 12.5000}
+];
