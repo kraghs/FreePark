@@ -307,3 +307,26 @@ async function loadOSMFreeParking(){
 loadOSMFreeParking();
 
 });
+
+/* Ny søgefelt-stil */
+.search-wrapper {
+  max-width: 720px;
+  margin: 12px auto;
+  display: flex;
+  justify-content: center;
+}
+.search-wrapper input {
+  flex: 1;
+  padding: 12px 14px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  font-size: 1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  transition: all 0.2s ease;
+}
+.search-wrapper input:focus {
+  outline: none;
+  border-color: #007AFF;
+  box-shadow: 0 3px 10px rgba(0,122,255,0.25);
+}
+
