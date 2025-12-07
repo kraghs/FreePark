@@ -40,10 +40,10 @@
     <ul id="parkingList"></ul>
   </section>
 
-  <!-- Plus-knap -->
+  <!-- Plus-knap (FAB) -->
   <button id="addFab" title="Tilføj parkering">+</button>
 
-  <!-- Tilføj-modal -->
+  <!-- Ny tilføj-modal (overlays er altid skjult ved load) -->
   <div id="addModal" class="hidden">
     <div class="add-modal-content">
       <div class="add-modal-header">
@@ -51,10 +51,10 @@
         <button id="addCloseBtn" aria-label="Luk">✕</button>
       </div>
       <div class="add-modal-body">
-        <label>Navn</label>
+        <label class="add-label">Navn</label>
         <input id="addName" type="text" placeholder="Navn / vejnavn" />
 
-        <label>Adresse</label>
+        <label class="add-label">Adresse</label>
         <div class="add-address-row">
           <input id="addAddress" type="text" placeholder="Adresse (gadenavn, by)" />
           <button id="addUseLocation" class="secondary">Brug min lokation</button>
