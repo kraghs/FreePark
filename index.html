@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FreePark</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <h1>FreePark – Gratis parkering i Danmark</h1>
+
+  <div id="map" style="height:300px;"></div>
+
+  <h2>Liste over gratis parkeringspladser</h2>
+  <ul id="parkingList"></ul>
+
+  <h2>Tilføj ny gratis parkering</h2>
+  <input type="text" id="spotName" placeholder="Navn">
+  <input type="text" id="spotInfo" placeholder="Beskrivelse">
+  <button id="addSpotBtn">Tilføj spot</button>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="script.js"></script>
+</body>
+</html>
