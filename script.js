@@ -1,34 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
 
 let parkingSpots = [
-  // Aarhus
-  {name: "Tangkrogen", address: "Marselisborg Havnevej 4, 8000 Aarhus", lat: 56.1520, lng: 10.2030, note: "Stor parkeringsplads, ofte ledig om aftenen, gratis"},
-  {name: "Ceres Park", address: "Stadion Allé 70, 8000 Aarhus", lat: 56.1515, lng: 10.2050, note: "Gratis i weekenden, tæt på stadion"},
-  {name: "Donbækhaven", address: "Oddervej 6, 8000 Aarhus", lat: 56.1440, lng: 10.2100, note: "Gadeparkering, tjek skilte."},
-  {name: "Marselisborg Strand", address: "Strandvejen 23, 8000 Aarhus", lat: 56.1470, lng: 10.2055, note: "Mindre p-plads ved strand, ofte gratis udenfor sæson."},
-
-  // København (udvalg + Amager)
-  {name: "Amager Strand", address: "Strandvejen 3, 2300 København S", lat: 55.6469, lng: 12.5950, note: "Større p-pladser ved stranden. Tjek skilte for zoner."},
-  {name: "Amagerbrogade", address: "Amagerbrogade, 2300 København S", lat: 55.6600, lng: 12.5900, note: "Gadeparkering i dele af Amager - tidsbegrænset."},
-  {name: "Ørestad P", address: "Ørestads Boulevard, 2300 København S", lat: 55.6356, lng: 12.5868, note: "Store p-pladser, ofte gratis i ydre områder."},
-  {name: "Valby Langgade", address: "Valby Langgade, 2500 Valby", lat: 55.6575, lng: 12.4960, note: "Gadeparkering, tjek p-skiltning."},
-  {name: "Vesterbro / Sønder Boulevard", address: "Sønder Boulevard, 1720 København", lat: 55.6670, lng: 12.5650, note: "Gratis efter visse tidspunkter - se skiltning."},
-  {name: "Nørrebrogade (NV)", address: "Nørrebrogade, 2200 København", lat: 55.6920, lng: 12.5660, note: "Nørrebro gader - nogle steder tidsbegrænset/gratis i weekender."},
-  {name: "Østerbro (sidegader)", address: "Østerbro, København", lat: 55.7030, lng: 12.5850, note: "Sidegader har ofte gratis pladser - tjek skilte."},
-  {name: "Frederiksberg / Smallegade", address: "Smallegade, Frederiksberg", lat: 55.6760, lng: 12.5230, note: "Gratis tidlig morgen/visse områder - tjek lokalt."},
-  {name: "Christianshavn / Torvegade", address: "Torvegade, 1400 København K", lat: 55.6760, lng: 12.5930, note: "Sidegader kan have gratis pladser."},
-
-  // Helsingør
-  {name: "Jernbanevej P-plads", address: "Jernbanevej, 3000 Helsingør", lat: 56.0390, lng: 12.6130, note: "P-plads nær station. Tjek skilte for tid."},
-  {name: "Stationens P-plads", address: "Stationspladsen, 3000 Helsingør", lat: 56.0395, lng: 12.6065, note: "Korttidsparkering ved stationen."},
-  {name: "Nordhavnen / Mole", address: "Nordhavnsvej, 3000 Helsingør", lat: 56.0425, lng: 12.6080, note: "Kystnær p-plads, ofte gratis."},
-
-  // Ekstra spots
-  {name: "Vanløse (stationsområde)", address: "Vanløse, København", lat: 55.6970, lng: 12.4890, note: "Stationsnær parkering, tjek lokalt."},
-  {name: "Hellerup område", address: "Hellerup, Gentofte", lat: 55.7390, lng: 12.5740, note: "Visse gader/tidszoner gratis uden for peak."},
-  {name: "Amager Vest (ydre)", address: "Amager Vest, København", lat: 55.6450, lng: 12.5700, note: "Ydre Amager: flere gratis p-pladser."},
-  {name: "Valby Syd P", address: "Valbyparken, Valby", lat: 55.6560, lng: 12.4995, note: "Større p-plads tæt ved park."},
-  {name: "Ørestad P2", address: "Arne Jacobsens Allé, Ørestad", lat: 55.6366, lng: 12.5902, note: "Parkeringspladser i Ørestad, ofte med gratis zoner."}
+  {name: "Tangkrogen", address: "Marselisborg Havnevej 4, 8000 Aarhus", lat: 56.1520, lng: 10.2030, note: "Stor parkeringsplads, ofte ledig om aftenen, gratis", timeLimit: "Ingen tidsbegrænsning", freeHours: "Hele dagen"},
+  {name: "Ceres Park", address: "Stadion Allé 70, 8000 Aarhus", lat: 56.1515, lng: 10.2050, note: "Gratis i weekenden, tæt på stadion", timeLimit: "Ingen tidsbegrænsning i weekenden", freeHours: "Lørdag-søndag"},
+  {name: "Amager Strand", address: "Strandvejen 3, 2300 København S", lat: 55.6469, lng: 12.5950, note: "Større p-pladser ved stranden. Tjek skilte for zoner.", timeLimit: "Ofte 3 timer", freeHours: "Efter kl. 18"}
 ];
 
 /* =========================
@@ -65,9 +40,13 @@ parkingSpots.forEach(spot=>{
   circle.bindPopup(`
     <strong>${spot.name}</strong><br>
     <small>${spot.address}</small><br>
-    <div style="margin-top:8px;">
-      <button onclick="openInfoFromMarker('${spot.name}')" style="background:#007AFF;border:none;color:white;padding:6px 8px;border-radius:6px;cursor:pointer;font-weight:600">Se info</button>
-    </div>`);
+    <details style="margin-top:8px;">
+      <summary>Se info</summary>
+      <p>${spot.note}</p>
+      ${spot.timeLimit ? `<p>Tidsbegrænsning: ${spot.timeLimit}</p>` : ""}
+      ${spot.freeHours ? `<p>Gratisperioder: ${spot.freeHours}</p>` : ""}
+    </details>
+  `);
 
   spot.marker = circle;
   circle.on('click', () => {
@@ -115,14 +94,15 @@ function renderSpots(lat=userLat,lng=userLng){
 function openInfoModal(spot){
   document.getElementById('infoTitle').textContent=spot.name;
   document.getElementById('infoAddress').textContent="Adresse: "+spot.address;
-  document.getElementById('infoNote').textContent="Info: "+spot.note;
+
+  let infoText = "Info: " + spot.note;
+  if (spot.timeLimit) infoText += "\nTidsbegrænsning: " + spot.timeLimit;
+  if (spot.freeHours) infoText += "\nGratisperioder: " + spot.freeHours;
+
+  document.getElementById('infoNote').textContent=infoText;
   document.getElementById('infoModal').classList.remove('hidden');
 }
 document.getElementById('closeInfoBtn').addEventListener('click',()=>document.getElementById('infoModal').classList.add('hidden'));
-window.openInfoFromMarker = function(name){
-  const spot = parkingSpots.find(s => s.name === name);
-  if(spot) openInfoModal(spot);
-};
 
 /* =========================
    Init geolocation
@@ -135,6 +115,4 @@ if(navigator.geolocation){
     map.setView([userLat,userLng],12);
     renderSpots();
   },()=>{renderSpots();});
-}else{renderSpots();}
-
-});
+}else{render
