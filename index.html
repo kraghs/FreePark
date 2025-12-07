@@ -17,7 +17,10 @@
   </header>
 
   <section id="search-section">
-    <input type="text" id="searchInput" placeholder="Søg adresse eller område...">
+    <div class="search-wrapper">
+      <input type="text" id="searchInput" placeholder="Søg adresse eller område...">
+      <button id="useMyLocationBtn" title="Brug min lokation">📍</button>
+    </div>
   </section>
 
   <div id="map"></div>
@@ -34,7 +37,6 @@
       <h2>Tilføj gratis parkering</h2>
       <input type="text" id="spotName" placeholder="Navn / vejnavn">
       <input type="text" id="spotAddress" placeholder="Adresse">
-      <button id="useMyLocationBtn">Brug min lokation</button>
       <button id="addSpotBtn">Gem</button>
       <button id="cancelAddBtn">Annuller</button>
     </div>
@@ -50,6 +52,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script> <!-- til geokodning -->
   <script src="script.js"></script>
 </body>
 </html>
