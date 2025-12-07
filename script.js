@@ -76,13 +76,29 @@ parkingSpots.forEach(spot=>{
     fillOpacity: 1
   }).addTo(map);
 
-  circle.bindPopup(`<strong>${escapeHtml(spot.name)}</strong><br><small>${escapeHtml(spot.address)}</small><br><div style="margin-top:8px;"><button onclick="openInfoFromMarker('${escapeJs(spot.name)}')" style="background:#00c07b;border:none;color:#111;padding:6px 8px;border-radius:6px;cursor:pointer;font-weight:600">Se info</button></div>`);
-  spot.marker = circle;
+ circle.on('click', () => {
+  // Luk eksisterende info-bokse på kortet
+  document.querySelectorAll('.mapInfoDropdown').forEach(d => d.remove());
 
-  circle.on('click', () => {
-    map.setView([spot.lat, spot.lng], 14);
-    circle.openPopup();
-  });
+  // Lav en div til info
+  const infoDiv = document.createElement('div');
+  infoDiv.className = 'mapInfoDropdown';
+  infoDiv.style.position = 'absolute';
+  infoDiv.style.backgroundColor = '#222';
+  infoDiv.style.color = '#fff';
+  infoDiv.style.padding = '8px';
+  infoDiv.style.borderRadius = '6px';
+  infoDiv.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
+  infoDiv.innerHTML = `<strong>${escapeHtml(spot.name)}</strong><br>${escapeHtml(spot.address)}<br>${escapeHtml(spot.note)}`;
+
+  // Beregn position over markøren
+  const pos = map.latLngToContainerPoint([spot.lat, spot.lng]);
+  infoDiv.style.left = `${pos.x}px`;
+  infoDiv.style.top = `${pos.y - 50}px`; // 50px over markøren
+
+  // Tilføj til map container
+  document.getElementById('map').appendChild(infoDiv);
+});
 });
 
 /* =========================
