@@ -5,36 +5,42 @@ header { text-align:center; padding:16px; background:#fff; border-bottom:1px sol
 header .tagline { margin:6px 0 2px; color:#444; }
 header .warning { margin:0; color:#a15; font-weight:600; }
 
-
-/* Search */
+/* Slick search */
 #search-section { background:#fff; border-bottom:1px solid #eee; }
-
-/* Ny søgefelt-stil */
 .search-wrapper {
   max-width: 720px;
   margin: 12px auto;
-  display: flex;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 0 16px 12px;
 }
 .search-wrapper input {
-  flex: 1;
   padding: 12px 14px;
   border: 1px solid #ddd;
   border-radius: 12px;
   font-size: 1rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
   transition: all 0.2s ease;
 }
 .search-wrapper input:focus {
   outline: none;
   border-color: #007AFF;
-  box-shadow: 0 3px 10px rgba(0,122,255,0.25);
+  box-shadow: 0 3px 10px rgba(0,122,255,0.18);
 }
+.search-wrapper button#clearSearch {
+  padding: 12px 14px;
+  border: none;
+  background: #eee;
+  color: #333;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.search-wrapper button#clearSearch:hover { background:#e2e2e2; }
 
-
-/* Map */
+/* Map (critical: fixed height) */
 #map {
-  height: 64vh;         /* Kritisk: fast højde, ellers bliver kortet usynligt */
+  height: 64vh;
   width: 100%;
   border-top: 1px solid #eee;
   border-bottom: 1px solid #eee;
@@ -47,11 +53,8 @@ header .warning { margin:0; color:#a15; font-weight:600; }
 #parkingList li {
   padding: 10px 8px;
   border-bottom: 1px solid #e5e5e5;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  background: #fff;
+  display: flex; justify-content: space-between; align-items: center;
+  cursor: pointer; background: #fff;
 }
 #parkingList li button {
   background:#007AFF; color:#fff; border:none;
@@ -64,6 +67,7 @@ header .warning { margin:0; color:#a15; font-weight:600; }
 }
 #infoModal.hidden { display: none; }
 .modal h3 { margin:0 0 6px; }
+.danger { background:#d9534f; color:#fff; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; }
 
 /* Floating add button (FAB) */
 #addFab {
@@ -104,12 +108,13 @@ header .warning { margin:0; color:#a15; font-weight:600; }
 .add-modal-body input {
   width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;
 }
-.add-address-row { display: flex; gap: 8px; align-items: stretch; }
+.add-address-row { display: flex; gap: 8px; align-items: stretch; margin-bottom:8px; }
 .add-address-row input { flex: 1; }
 .add-address-row .secondary {
   border: none; background: #eee; padding: 10px 12px; border-radius: 6px; cursor: pointer;
 }
 .add-status { margin-top:8px; color:#666; font-size:0.9rem; }
+.add-row { display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px; }
 .add-modal-footer { padding: 12px 14px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; }
 .add-modal-footer .primary {
   border: none; background: #007AFF; color: #fff; padding: 10px 14px; border-radius: 6px; cursor: pointer;
