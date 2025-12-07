@@ -119,3 +119,28 @@ header .warning { margin:0; color:#a15; font-weight:600; }
 .add-modal-footer .primary {
   border: none; background: #007AFF; color: #fff; padding: 10px 14px; border-radius: 6px; cursor: pointer;
 }
+
+/* Dropdown med søgeresultater */
+.search-results {
+  max-width: 720px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+  overflow: hidden;
+}
+.search-results.hidden { display: none; }
+.search-results ul { list-style: none; margin: 0; padding: 6px; }
+.search-results li {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.search-results li:hover {
+  background: #f4f7ff;
+}
+.search-results .no-results {
+  color: #666;
+  padding: 10px 12px;
+}
