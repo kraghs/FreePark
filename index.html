@@ -21,13 +21,17 @@
     <p class="warning">⚠️ Tjek altid lokale skilte – regler kan ændre sig</p>
   </header>
 
-  <!-- Slick search -->
-  <section id="search-section">
-    <div class="search-wrapper">
-      <input id="searchInput" type="text" placeholder="🔍 Søg område eller adresse..." autocomplete="off" />
-      <button id="clearSearch" title="Ryd søgning" aria-label="Ryd">✕</button>
-    </div>
-  </section>
+ <!-- Ny søgefunktion -->
+<section id="search-section">
+  <div class="search-wrapper">
+    <input id="searchInput" type="text" placeholder="🔍 Søg område eller adresse..." autocomplete="off" />
+    <button id="clearSearch" title="Ryd søgning" aria-label="Ryd">✕</button>
+  </div>
+
+  <!-- Tilføj denne nye linje lige under .search-wrapper -->
+  <div id="searchResults" class="search-results hidden"></div>
+</section>
+
 
   <!-- Map -->
   <div id="map"></div>
