@@ -28,7 +28,7 @@
       <input
         id="searchInput"
         type="text"
-        placeholder="🔍 Søg område, by eller adresse (fx: Amager, Brøndby, Odense...)"
+        placeholder="🔍 Søg område, by eller adresse (fx: Helsingør, Amager, Odense...)"
         autocomplete="off"
         aria-label="Søg efter parkeringsplads"
       />
@@ -44,7 +44,7 @@
     <!-- Nearby list -->
     <section id="list-section" aria-label="Spots i nærheden">
       <div class="list-header">
-        <h2>Spots i nærheden</h2>
+        <h2>Spots i nærheden (Top 5)</h2>
         <p id="nearbyMeta" class="nearby-meta">Afstand fra din nuværende position</p>
       </div>
       <ul id="parkingList" class="parking-list" role="list"></ul>
@@ -67,6 +67,7 @@
 
   <!-- Scripts -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
