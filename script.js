@@ -432,3 +432,5 @@ document.addEventListener('click', (e) => {
     hideSearchResults();
   }
 });
+
+renderNearbySpots(userLat, userLng);
