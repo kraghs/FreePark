@@ -1,8 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
 
-/* =========================
-   parkingSpots (uændret indhold fra din version)
-   ========================= */
 let parkingSpots = [
   // Aarhus
   {name: "Tangkrogen", address: "Marselisborg Havnevej 4, 8000 Aarhus", lat: 56.1520, lng: 10.2030, note: "Stor parkeringsplads, ofte ledig om aftenen, gratis"},
@@ -22,7 +19,7 @@ let parkingSpots = [
   {name: "Christianshavn / Torvegade", address: "Torvegade, 1400 København K", lat: 55.6760, lng: 12.5930, note: "Sidegader kan have gratis pladser."},
 
   // Helsingør
-  {name: "Jernbanevej P-plads", address: "Jernbanevej, 3000 Helsingør", lat: 56.0390, lng: 12.6130, note: "P-plads nær station. Tjek skilte for timebegrænsning."},
+  {name: "Jernbanevej P-plads", address: "Jernbanevej, 3000 Helsingør", lat: 56.0390, lng: 12.6130, note: "P-plads nær station. Tjek skilte for tid."},
   {name: "Stationens P-plads", address: "Stationspladsen, 3000 Helsingør", lat: 56.0395, lng: 12.6065, note: "Korttidsparkering ved stationen."},
   {name: "Nordhavnen / Mole", address: "Nordhavnsvej, 3000 Helsingør", lat: 56.0425, lng: 12.6080, note: "Kystnær p-plads, ofte gratis."},
 
@@ -34,26 +31,18 @@ let parkingSpots = [
   {name: "Ørestad P2", address: "Arne Jacobsens Allé, Ørestad", lat: 55.6366, lng: 12.5902, note: "Parkeringspladser i Ørestad, ofte med gratis zoner."}
 ];
 
-/* =========================
-   App state (fixed: declare userMarker)
-   ========================= */
 let userLat = 55.6761;
 let userLng = 12.5683;
-let userMarker = null; // <-- vigtige linje, før setUserMarker kaldes
-let map = L.map('map', { preferCanvas: true }).setView([userLat, userLng], 6);
+let map, userMarker;
 
-/* =========================
-   Tile layer (Carto Voyager som vi brugte)
-   ========================= */
+map = L.map('map', { preferCanvas: true }).setView([userLat, userLng], 6);
+
 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
   attribution: '&copy; OpenStreetMap & CARTO',
   subdomains: 'abcd',
   maxZoom: 20
 }).addTo(map);
 
-/* =========================
-   Utility functions (uændrede)
-   ========================= */
 function toRad(x){return x*Math.PI/180}
 function distance(lat1,lng1,lat2,lng2){
   const R=6371;
@@ -64,21 +53,9 @@ function distance(lat1,lng1,lat2,lng2){
 }
 
 /* =========================
-   Ensure openInfoFromMarker exists early (stability)
-   ========================= */
-function openInfoFromMarker(name){
-
-  const spot = parkingSpots.find(s => s.name === name);
-  if(spot) openInfoModal(spot);
-};
-
-/* =========================
-   Markers: add all spots to map as small circleMarkers
-   and keep reference in spot.marker
-   (kept your logic, only small popup onclick uses window.openInfoFromMarker)
-   ========================= */
+   Markers
+========================= */
 parkingSpots.forEach(spot=>{
-  // create small clean marker
   const circle = L.circleMarker([spot.lat, spot.lng], {
     radius: 6,
     color: '#0bb07b',
@@ -87,215 +64,181 @@ parkingSpots.forEach(spot=>{
     fillOpacity: 1
   }).addTo(map);
 
-  // bind popup with Se info button that calls global function
-  // Use double-escaped name with escapeJs to avoid quote breaks
-  const popupContent = document.createElement('div');
+  // bind popup with Se info as small menu under bullet
+  circle.bindPopup(`<div class="popup-content"><strong>${escapeHtml(spot.name)}</strong><br><small>${escapeHtml(spot.address)}</small><br><div style="margin-top:5px;"><button class="se-info-btn" style="background:#007AFF;color:white;border:none;padding:4px 6px;border-radius:5px;cursor:pointer;font-size:0.85em">Se info</button></div></div>`);
 
-const title = document.createElement('strong');
-title.textContent = spot.name;
-popupContent.appendChild(title);
-
-const addr = document.createElement('div');
-addr.innerHTML = `<small>${spot.address}</small>`;
-popupContent.appendChild(addr);
-
-const btnDiv = document.createElement('div');
-btnDiv.style.marginTop = '8px';
-const infoBtn = document.createElement('button');
-infoBtn.textContent = 'Se info';
-infoBtn.style.cssText = 'background:#007AFF;border:none;color:white;padding:6px 8px;border-radius:6px;cursor:pointer;font-weight:600';
-infoBtn.addEventListener('click', ()=> openInfoModal(spot)); // ✅ Her binder vi direkte
-btnDiv.appendChild(infoBtn);
-popupContent.appendChild(btnDiv);
-
-circle.bindPopup(popupContent);
-
-
-  // store marker on spot
-  spot.marker = circle;
-
-  // click on marker centers and opens popup
-  circle.on('click', () => {
-    map.setView([spot.lat, spot.lng], 14);
-    circle.openPopup();
+  // after popup opens, bind button click
+  circle.on('popupopen', function(e){
+    const btn = e.popup._contentNode.querySelector('.se-info-btn');
+    btn.addEventListener('click',()=>openInfoModal(spot));
   });
+
+  spot.marker = circle;
+  circle.on('click', () => { map.setView([spot.lat, spot.lng], 14); });
 });
 
 /* =========================
-   User marker function (REPLACED: Apple-ish blue with white border)
-   ========================= */
+   User marker
+========================= */
 function setUserMarker(lat,lng){
   if(userMarker) map.removeLayer(userMarker);
   userMarker = L.circleMarker([lat,lng], {
     radius: 8,
-    color: '#ffffff',      // white outline
+    color: '#ffffff',
     weight: 3,
-    fillColor: '#007AFF',  // blue fill (Apple-like)
+    fillColor: '#007AFF',
     fillOpacity: 1
   }).addTo(map).bindPopup("Din position");
 }
 
 /* =========================
-   Render 5 nearest in list
-   ========================= */
+   Render spots
+========================= */
 function renderSpots(lat=userLat,lng=userLng){
   const list=document.getElementById('parkingList');
-  if(!list) return; // defensive
   list.innerHTML='';
   const nearby=parkingSpots.map(s=>({...s,dist:distance(lat,lng,s.lat,s.lng)}))
                            .sort((a,b)=>a.dist-b.dist)
                            .slice(0,5);
   nearby.forEach(spot=>{
     const li=document.createElement('li');
-    const infoBtn=document.createElement('button');
-    infoBtn.textContent="Se info";
-    infoBtn.addEventListener('click', (e)=>{ e.stopPropagation(); openInfoModal(spot); });
-    li.innerHTML=`${spot.name} - ${spot.address} (${spot.dist.toFixed(1)} km) `;
+    li.textContent = `${spot.name} - ${spot.address} (${spot.dist.toFixed(1)} km) `;
+    const infoBtn = document.createElement('button');
+    infoBtn.textContent = 'Se info';
+    infoBtn.style.cssText = 'background:#007AFF;color:white;border:none;padding:4px 6px;border-radius:5px;margin-left:6px;cursor:pointer;font-size:0.85em';
+    infoBtn.addEventListener('click',(e)=>{ e.stopPropagation(); openInfoModal(spot); });
     li.appendChild(infoBtn);
-    li.addEventListener('click',()=>{map.setView([spot.lat,spot.lng],15); if(spot.marker) spot.marker.openPopup();});
+    li.addEventListener('click',()=>{ map.setView([spot.lat,spot.lng],15); });
     list.appendChild(li);
-    if(!spot.marker) spot.marker=L.marker([spot.lat,spot.lng]).addTo(map).bindPopup(spot.name);
   });
 }
 
 /* =========================
-   Info modal
-   ========================= */
+   Info modal replacement (dropdown under bullet)
+========================= */
 function openInfoModal(spot){
-  const titleEl = document.getElementById('infoTitle');
-  const addrEl = document.getElementById('infoAddress');
-  const noteEl = document.getElementById('infoNote');
-  if(titleEl) titleEl.textContent=spot.name;
-  if(addrEl) addrEl.textContent="Adresse: "+spot.address;
-  if(noteEl) noteEl.textContent="Info: "+spot.note;
-  const modal = document.getElementById('infoModal');
-  if(modal) modal.classList.remove('hidden');
+  // Find evt. allerede åben info og luk den
+  const existing = document.querySelector('.spot-info-dropdown');
+  if(existing) existing.remove();
+
+  // find li eller popup som udløste
+  let anchor = document.querySelector(`#parkingList li button:focus`);
+  if(!anchor) anchor = document.querySelector(`#parkingList li`); // fallback
+
+  // create dropdown
+  const div = document.createElement('div');
+  div.className = 'spot-info-dropdown';
+  div.style.cssText = 'background:#222;color:white;padding:8px;border-radius:6px;margin-top:4px;font-size:0.85em';
+  div.innerHTML = `<strong>${spot.name}</strong><br>Adresse: ${spot.address}<br>Info: ${spot.note}`;
+  if(anchor) anchor.parentNode.insertBefore(div, anchor.nextSibling);
 }
-const closeBtn = document.getElementById('closeInfoBtn');
-if(closeBtn) closeBtn.addEventListener('click',()=>{ const m=document.getElementById('infoModal'); if(m) m.classList.add('hidden'); });
 
 /* =========================
-   Search: show matching results under search field
-   ========================= */
+   Close info dropdown on click outside
+========================= */
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.spot-info-dropdown') && !e.target.closest('#parkingList li button')){
+    const existing = document.querySelector('.spot-info-dropdown');
+    if(existing) existing.remove();
+  }
+});
+
+/* =========================
+   Global function for marker popup
+========================= */
+function openInfoFromMarker(name){
+  const spot = parkingSpots.find(s => s.name === name);
+  if(spot) openInfoModal(spot);
+}
+
+/* =========================
+   Search
+========================= */
 const searchInput = document.getElementById('searchInput');
 const searchResults = document.getElementById('searchResults');
-if(searchInput){
-  searchInput.addEventListener('input', (e) => {
-    const q = e.target.value.trim().toLowerCase();
-    if(!q){
-      if(searchResults){ searchResults.classList.add('hidden'); searchResults.innerHTML = ''; }
-      return;
-    }
-    const matches = parkingSpots.filter(s => s.name.toLowerCase().includes(q) || s.address.toLowerCase().includes(q));
-    if(matches.length === 0){ if(searchResults){ searchResults.classList.add('hidden'); searchResults.innerHTML=''; } return; }
-    if(searchResults) searchResults.innerHTML = '';
-    matches.forEach(spot => {
-      const row = document.createElement('div');
-      row.className = 'result';
-      row.innerHTML = `<div><strong>${escapeHtml(spot.name)}</strong><br><small>${escapeHtml(spot.address)}</small></div><div><small>${distance(userLat,userLng,spot.lat,spot.lng).toFixed(1)} km</small></div>`;
-      row.addEventListener('click', () => {
-        map.setView([spot.lat, spot.lng], 14);
-        if(spot.marker) spot.marker.openPopup();
-        openInfoModal(spot);
-        if(searchResults){ searchResults.classList.add('hidden'); searchResults.innerHTML=''; }
-        if(searchInput) searchInput.value = '';
-      });
-      if(searchResults) searchResults.appendChild(row);
+searchInput.addEventListener('input',(e)=>{
+  const q=e.target.value.trim().toLowerCase();
+  if(!q){ searchResults.classList.add('hidden'); searchResults.innerHTML=''; return; }
+  const matches = parkingSpots.filter(s=>s.name.toLowerCase().includes(q) || s.address.toLowerCase().includes(q));
+  if(matches.length===0){ searchResults.classList.add('hidden'); searchResults.innerHTML=''; return; }
+  searchResults.innerHTML='';
+  matches.forEach(spot=>{
+    const row=document.createElement('div');
+    row.className='result';
+    row.innerHTML=`<div><strong>${spot.name}</strong><br><small>${spot.address}</small></div><div><small>${distance(userLat,userLng,spot.lat,spot.lng).toFixed(1)} km</small></div>`;
+    row.addEventListener('click',()=>{
+      map.setView([spot.lat,spot.lng],14);
+      if(spot.marker) spot.marker.openPopup();
+      openInfoModal(spot);
+      searchResults.classList.add('hidden'); searchResults.innerHTML='';
+      searchInput.value='';
     });
-    if(searchResults) searchResults.classList.remove('hidden');
+    searchResults.appendChild(row);
   });
-}
+  searchResults.classList.remove('hidden');
+});
 
 /* =========================
-   "Brug min lokation" (search & add)
-   ========================= */
-const useLocBtn = document.getElementById('useMyLocationBtn');
-if(useLocBtn) useLocBtn.addEventListener('click', () => {
+   Use my location
+========================= */
+document.getElementById('useMyLocationBtn').addEventListener('click',()=>{
   if(!navigator.geolocation){ alert('Din browser understøtter ikke geolokation'); return; }
-  navigator.geolocation.getCurrentPosition(pos => {
-    userLat = pos.coords.latitude; userLng = pos.coords.longitude;
-    setUserMarker(userLat, userLng);
-    map.setView([userLat, userLng], 12);
+  navigator.geolocation.getCurrentPosition(pos=>{
+    userLat=pos.coords.latitude; userLng=pos.coords.longitude;
+    setUserMarker(userLat,userLng);
+    map.setView([userLat,userLng],12);
     renderSpots();
-  }, ()=> alert('Kunne ikke hente din lokation'));
-});
-
-/* Bonus: small button inside ADD modal to use location */
-const useLocAddBtn = document.getElementById('useMyLocationAddBtn');
-if(useLocAddBtn) useLocAddBtn.addEventListener('click', () => {
-  if(!navigator.geolocation){ alert('Din browser understøtter ikke geolokation'); return; }
-  navigator.geolocation.getCurrentPosition(pos => {
-    userLat = pos.coords.latitude; userLng = pos.coords.longitude;
-    const addrField = document.getElementById('spotAddress');
-    if(addrField) addrField.value = `${userLat.toFixed(6)}, ${userLng.toFixed(6)}`;
-    alert('Din lokation er sat i adressefeltet. Tryk Gem for at gemme spotet her.');
-  }, ()=> alert('Kunne ikke hente din lokation'));
+  },()=>alert('Kunne ikke hente din lokation'));
 });
 
 /* =========================
-   Add spot (geocode via Nominatim -> precise coords)
-   ========================= */
-const toggleAddBtn = document.getElementById('toggleAddBtn');
-if(toggleAddBtn) toggleAddBtn.addEventListener('click',()=> { const b=document.getElementById('addSpotBox'); if(b) b.classList.toggle('hidden'); });
-
-const cancelAddBtn = document.getElementById('cancelAddBtn');
-if(cancelAddBtn) cancelAddBtn.addEventListener('click',()=> { const b=document.getElementById('addSpotBox'); if(b) b.classList.add('hidden'); });
-
-const addSpotBtn = document.getElementById('addSpotBtn');
-if(addSpotBtn) addSpotBtn.addEventListener('click',()=>{
-  const nameEl = document.getElementById('spotName');
-  const addrEl = document.getElementById('spotAddress');
-  const name = nameEl ? nameEl.value.trim() : '';
-  const address = addrEl ? addrEl.value.trim() : '';
+   Add spot
+========================= */
+document.getElementById('toggleAddBtn').addEventListener('click',()=> document.getElementById('addSpotBox').classList.toggle('hidden'));
+document.getElementById('cancelAddBtn').addEventListener('click',()=> document.getElementById('addSpotBox').classList.add('hidden'));
+document.getElementById('addSpotBtn').addEventListener('click',()=>{
+  const name=document.getElementById('spotName').value.trim();
+  const address=document.getElementById('spotAddress').value.trim();
   if(!name || !address){ alert('Udfyld navn og adresse'); return; }
 
-  // If address looks like coords (lat,lng) we parse directly
   const coordMatch = address.match(/^\s*([-+]?\d+\.\d+)\s*,\s*([-+]?\d+\.\d+)\s*$/);
   if(coordMatch){
-    const lat = parseFloat(coordMatch[1]), lng = parseFloat(coordMatch[2]);
-    pushNewSpot(name, address, lat, lng);
+    const lat=parseFloat(coordMatch[1]), lng=parseFloat(coordMatch[2]);
+    pushNewSpot(name,address,lat,lng);
     return;
   }
 
-  // Geocode via Nominatim
-  axios.get('https://nominatim.openstreetmap.org/search', { params:{ q: address, format:'json', limit:1 }})
-    .then(resp => {
+  axios.get('https://nominatim.openstreetmap.org/search',{params:{q:address,format:'json',limit:1}})
+    .then(resp=>{
       if(!resp.data || resp.data.length===0){ alert('Adresse ikke fundet'); return; }
-      const lat = parseFloat(resp.data[0].lat), lng = parseFloat(resp.data[0].lon);
-      pushNewSpot(name, address, lat, lng);
+      const lat=parseFloat(resp.data[0].lat), lng=parseFloat(resp.data[0].lon);
+      pushNewSpot(name,address,lat,lng);
     }).catch(()=> alert('Fejl ved geokodning'));
 });
 
 function pushNewSpot(name,address,lat,lng){
-  const spot = {name,address,lat,lng,note:'Bruger-tilføjet'};
+  const spot={name,address,lat,lng,note:'Bruger-tilføjet'};
   parkingSpots.push(spot);
-  // add marker
-  spot.marker = L.circleMarker([lat,lng], { radius:6, color:'#0bb07b', weight:2, fillColor:'#00c07b', fillOpacity:1 }).addTo(map);
-  spot.marker.bindPopup(`<strong>${escapeHtml(spot.name)}</strong><br><small>${escapeHtml(spot.address)}</small><br><div style="margin-top:8px;"><button onclick="window.openInfoFromMarker('${escapeJs(spot.name)}')" style="background:#007AFF;border:none;color:white;padding:6px 8px;border-radius:6px;cursor:pointer;font-weight:600">Se info</button></div>`);
-  const nameEl = document.getElementById('spotName');
-  const addrEl = document.getElementById('spotAddress');
-  if(nameEl) nameEl.value=''; if(addrEl) addrEl.value='';
-  const addBox = document.getElementById('addSpotBox'); if(addBox) addBox.classList.add('hidden');
+  spot.marker=L.circleMarker([lat,lng], { radius:6, color:'#0bb07b', weight:2, fillColor:'#00c07b', fillOpacity:1 }).addTo(map);
+  spot.marker.bindPopup(`<strong>${spot.name}</strong><br><small>${spot.address}</small><br><div style="margin-top:8px;"><button onclick="openInfoFromMarker('${spot.name}')" style="background:#007AFF;border:none;color:white;padding:6px 8px;border-radius:6px;cursor:pointer;font-weight:600">Se info</button></div>`);
+  document.getElementById('spotName').value=''; document.getElementById('spotAddress').value='';
+  document.getElementById('addSpotBox').classList.add('hidden');
   renderSpots();
 }
 
 /* =========================
-   Init geolocation & initial rendering
-   ========================= */
+   Init geolocation
+========================= */
 if(navigator.geolocation){
   navigator.geolocation.getCurrentPosition(pos=>{
-    userLat=pos.coords.latitude;
-    userLng=pos.coords.longitude;
+    userLat=pos.coords.latitude; userLng=pos.coords.longitude;
     setUserMarker(userLat,userLng);
     map.setView([userLat,userLng],12);
     renderSpots();
   },()=>{renderSpots();});
 }else{renderSpots();}
 
-/* =========================
-   Small helpers to escape strings inserted into HTML/JS
-   ========================= */
-function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escapeJs(s){ return (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'\\"'); }
 
-}); // DOMContentLoaded end
+});
