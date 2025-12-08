@@ -84,10 +84,15 @@ function initMap() {
   map = L.map('map').setView([55.6761, 12.5683], 12); // København default
 
   // Brug den mest robuste OSM tile (ingen CORS problemer)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap'
-  }).addTo(map);
+// Clean, Apple-agtig light map fra Carto
+L.tileLayer(
+  'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  {
+    attribution: '© OpenStreetMap © CARTO',
+    subdomains: 'abcd',
+    maxZoom: 20
+  }
+).addTo(map);
 
   markersLayer = L.layerGroup().addTo(map);
 
