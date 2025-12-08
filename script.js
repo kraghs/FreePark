@@ -1,360 +1,316 @@
-document.addEventListener('DOMContentLoaded', () => {
+/* FreePark – DK-only gratis parkering
+   - Apple-agtig oplevelse
+   - DK-area søgning, 5 nærmeste, tilføj med reverse geocoding
+*/
 
-/* =========================
-   Constants and state
-   ========================= */
-const DK_BOUNDS = { minLat: 54.56, maxLat: 57.75, minLng: 8.07, maxLng: 15.19 };
-function isInDenmark(lat, lng) {
-  return lat >= DK_BOUNDS.minLat && lat <= DK_BOUNDS.maxLat &&
-         lng >= DK_BOUNDS.minLng && lng <= DK_BOUNDS.maxLng;
-}
+// Nominatim endpoints (OpenStreetMap)
+const NOMINATIM_SEARCH = "https://nominatim.openstreetmap.org/search";
+const NOMINATIM_REVERSE = "https://nominatim.openstreetmap.org/reverse";
 
-// Fallback near Helsingør to reflect your location
-let userLat = 56.0308;
-let userLng = 12.6136;
+// State
+let map, userMarker, userLatLng = null;
+let parkingData = [];          // Merged base + user-added
+let baseParkingData = [];      // Seed dataset (replace/extend from real sources)
+let markersLayer = null;
+let areaBBox = null;           // Current area bounding box (if search)
 
-/* =========================
-   Area index for search (centers + radius in km)
-   ========================= */
-const AREA_INDEX = [
-  // København-områder
-  { key:["københavn","copenhagen","kbh"], center:[55.6761,12.5683], radiusKm:25 },
-  { key:["amager","københavn s","2300"], center:[55.64,12.60], radiusKm:10 },
-  { key:["brøndby","2605"], center:[55.648,12.418], radiusKm:10 },
-  { key:["roskilde","4000"], center:[55.6419,12.0870], radiusKm:14 },
-  { key:["hillerød","3400"], center:[55.927,12.313], radiusKm:12 },
-  { key:["frederikssund","3600"], center:[55.8365,12.068], radiusKm:12 },
-
-  // Nordsjælland
-  { key:["helsingør","3000"], center:[56.036,12.611], radiusKm:12 },
-  { key:["humlebæk","3050"], center:[55.969,12.533], radiusKm:10 },
-  { key:["nivå","2990"], center:[55.943,12.505], radiusKm:10 },
-  { key:["hørsholm","2970"], center:[55.875,12.498], radiusKm:10 },
-
-  // Fyn
-  { key:["odense","5000"], center:[55.403,10.388], radiusKm:14 },
-  { key:["nyborg","5800"], center:[55.311,10.799], radiusKm:12 },
-
-  // Jylland
-  { key:["aarhus","århus","8000"], center:[56.1629,10.2039], radiusKm:14 },
-  { key:["randers","8900"], center:[56.46,10.04], radiusKm:12 },
-  { key:["vejle","7100"], center:[55.71,9.53], radiusKm:12 },
-  { key:["esbjerg","6700"], center:[55.476,8.459], radiusKm:14 },
-  { key:["aalborg","9000"], center:[57.0488,9.9217], radiusKm:14 },
-  { key:["kolding","6000"], center:[55.491,9.472], radiusKm:14 },
-  { key:["silkeborg","8600"], center:[56.1697,9.5451], radiusKm:12 },
-  { key:["horsens","8700"], center:[55.860,9.85], radiusKm:12 }
-];
-
-function findArea(query) {
-  const q = query.trim().toLowerCase();
-  if (!q) return null;
-  for (const area of AREA_INDEX) {
-    if (area.key.some(k => q.includes(k))) return area;
-  }
-  return null;
-}
-
-/* =========================
-   Map setup with clean Apple-like style
-   ========================= */
-const map = L.map('map', { preferCanvas: true }).setView([55.8, 11.0], 6);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-  attribution: '&copy; OpenStreetMap & CARTO',
-  subdomains: 'abcd',
-  maxZoom: 19
-}).addTo(map);
-
-/* =========================
-   Utilities
-   ========================= */
-function toRad(x) { return x * Math.PI / 180; }
-function distanceKm(lat1, lng1, lat2, lng2) {
+// Utils
+function kmDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // km
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
   const a = Math.sin(dLat/2)**2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLng/2)**2;
-  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
+            Math.sin(dLon/2)**2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return Math.round((R * c + Number.EPSILON) * 100) / 100; // 2 decimals
 }
 
-/* =========================
-   Data: load ALL spots from local JSON
-   ========================= */
-let parkingSpots = [];
-
-function validateAndKeepDK(spots) {
-  return spots.filter(s => {
-    const valid = typeof s.lat === 'number' && typeof s.lng === 'number';
-    return valid && isInDenmark(s.lat, s.lng);
+function createUserLocationIcon() {
+  return L.divIcon({
+    className: 'user-location-dot',
+    iconSize: [18, 18]
   });
 }
 
-function markerPopupHTML(spot) {
-  const note = spot.note ? `<p>${spot.note}</p>` : '';
-  return `
-    <div>
-      <strong>${spot.name}</strong><br/>
-      <small>${spot.address || 'Ukendt adresse'}</small>
-      ${note}
-      <div style="margin-top:8px;">
-        <button class="open-info-btn" style="background:#007AFF;border:none;color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:700">Se detaljer</button>
-      </div>
-    </div>
-  `;
+function isInsideBBox(lat, lon, bbox) {
+  if (!bbox) return true;
+  const [minLon, minLat, maxLon, maxLat] = bbox; // Nominatim format
+  return lon >= minLon && lon <= maxLon && lat >= minLat && lat <= maxLat;
 }
 
-function addSpotToMap(spot) {
-  if (!isInDenmark(spot.lat, spot.lng)) return;
-  const marker = L.circleMarker([spot.lat, spot.lng], {
-    radius: 6,
-    color: '#0bb07b',
-    weight: 2,
-    fillColor: '#00c07b',
-    fillOpacity: 1
-  }).addTo(map);
-  marker.bindPopup(markerPopupHTML(spot));
-  marker.on('popupopen', () => {
-    const el = marker.getPopup().getElement();
-    const btn = el.querySelector('.open-info-btn');
-    if (btn) {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        openInfoModal(spot);
-      });
-    }
-  });
-  spot.marker = marker;
-}
-
-function fitAllDKSpotsInitially() {
-  const layers = parkingSpots.map(s => s.marker).filter(Boolean);
-  if (layers.length > 0) {
-    const group = L.featureGroup(layers);
-    map.fitBounds(group.getBounds().pad(0.12));
-  } else {
-    map.setView([55.8, 11.0], 6);
+// LocalStorage for user-added places
+const LS_KEY = "freepark_user_places";
+function loadUserPlaces() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
   }
 }
-
-/* =========================
-   Nearby list – ALL spots, sorted by distance
-   ========================= */
-function renderNearbyAll(lat, lng) {
-  const ul = document.getElementById('parkingList');
-  const meta = document.getElementById('nearbyMeta');
-  ul.innerHTML = '';
-
-  const sortedAll = parkingSpots
-    .filter(s => isInDenmark(s.lat, s.lng))
-    .map(s => ({ ...s, distKm: distanceKm(lat, lng, s.lat, s.lng) }))
-    .sort((a, b) => a.distKm - b.distKm);
-
-  meta.textContent = `Afstand fra din position — viser alle ${sortedAll.length} spots i Danmark`;
-
-  sortedAll.forEach(spot => {
-    const li = document.createElement('li');
-
-    const left = document.createElement('div');
-    const title = document.createElement('div');
-    title.className = 'parking-item-title';
-    title.textContent = spot.name;
-
-    const sub = document.createElement('div');
-    sub.className = 'parking-item-sub';
-    sub.textContent = spot.address && spot.address.trim() ? spot.address : 'Ukendt adresse';
-
-    left.appendChild(title);
-    left.appendChild(sub);
-
-    const right = document.createElement('div');
-    const badge = document.createElement('span');
-    badge.className = 'distance-badge';
-    badge.textContent = `${spot.distKm.toFixed(1)} km`;
-    right.appendChild(badge);
-
-    li.appendChild(left);
-    li.appendChild(right);
-
-    li.addEventListener('click', () => {
-      map.setView([spot.lat, spot.lng], 14);
-      spot.marker && spot.marker.openPopup();
-    });
-
-    ul.appendChild(li);
-  });
+function saveUserPlace(place) {
+  const list = loadUserPlaces();
+  list.push(place);
+  localStorage.setItem(LS_KEY, JSON.stringify(list));
 }
 
-/* =========================
-   Info modal
-   ========================= */
-function openInfoModal(spot) {
-  document.getElementById('infoTitle').textContent = spot.name;
-  document.getElementById('infoAddress').textContent = `Adresse: ${spot.address || 'Ukendt adresse'}`;
-  const details = [];
-  if (spot.note) details.push(`<p>${spot.note}</p>`);
-  document.getElementById('infoDetails').innerHTML = details.join('');
-  const overlay = document.getElementById('infoModal');
-  overlay.classList.remove('hidden');
-  overlay.setAttribute('aria-hidden', 'false');
-}
-function closeInfoModal() {
-  const overlay = document.getElementById('infoModal');
-  overlay.classList.add('hidden');
-  overlay.setAttribute('aria-hidden', 'true');
-}
-document.getElementById('closeInfoBtn').addEventListener('click', closeInfoModal);
-document.getElementById('infoModal').addEventListener('click', (e) => {
-  if (e.target.id === 'infoModal') closeInfoModal();
-});
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeInfoModal();
-});
+// Map init
+function initMap() {
+  map = L.map('map', {
+    zoomControl: true,
+    attributionControl: false
+  }).setView([55.6761, 12.5683], 12); // København default
 
-/* =========================
-   Geolocation (for sorting)
-   ========================= */
-let userMarker = null;
-function setUserMarker(lat, lng) {
-  if (userMarker) map.removeLayer(userMarker);
-  userMarker = L.circleMarker([lat, lng], {
-    radius: 8, color: '#ffffff', weight: 3, fillColor: '#007AFF', fillOpacity: 1
-  }).addTo(map).bindPopup('Din position');
-}
-function initGeolocationAndNearby() {
-  // Do not move the map; just set user marker and render nearby list (ALL spots sorted).
+  // Light basemap
+  L.tileLayer(
+    "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    { maxZoom: 19 }
+  ).addTo(map);
+
+  L.control.attribution({prefix: ''}).addAttribution('© OpenStreetMap, © CARTO');
+
+  markersLayer = L.layerGroup().addTo(map);
+
+  // Get location
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition((pos) => {
-      userLat = pos.coords.latitude;
-      userLng = pos.coords.longitude;
-      if (isInDenmark(userLat, userLng)) setUserMarker(userLat, userLng);
-      renderNearbyAll(userLat, userLng);
+      userLatLng = [pos.coords.latitude, pos.coords.longitude];
+      map.setView(userLatLng, 14);
+      userMarker = L.marker(userLatLng, { icon: createUserLocationIcon(), interactive: false }).addTo(map);
+      refreshNearest();
     }, () => {
-      renderNearbyAll(userLat, userLng);
-    }, { enableHighAccuracy: true, timeout: 12000 });
+      // If blocked, still render with default city
+      refreshNearest();
+    }, { enableHighAccuracy: true, timeout: 8000 });
   } else {
-    renderNearbyAll(userLat, userLng);
+    refreshNearest();
   }
 }
 
-/* =========================
-   Slick search with AREA matching
-   - Area radius first (Amager, København, Roskilde, Helsingør, ...)
-   - Fallback: name/address contains
-   - Does not move the map while typing
-   - Moves only when a result is clicked
-   ========================= */
-const searchInput = document.getElementById('searchInput');
-const clearSearch = document.getElementById('clearSearch');
-const searchResultsBox = document.getElementById('searchResults');
+// Seed data – replace/extend from curated sources
+// Schema: { id, name, address, lat, lon, info }
+baseParkingData = [
+  // København eksempler (tidsbegrænset/forhold; verificer lokalt)
+  {
+    id: "kbh-fisketorvet",
+    name: "Gratis parkering ved Fisketorvet",
+    address: "Havneholmen 5, 2450 København SV",
+    lat: 55.6617, lon: 12.5574,
+    info: "Gratis i udvalgte perioder; tjek skiltning på stedet."
+  },
+  {
+    id: "kbh-kastellet",
+    name: "Gratis parkering ved Kastellet",
+    address: "Gl. Hovedvagt, 2100 København Ø",
+    lat: 55.6933, lon: 12.5971,
+    info: "Ofte gratis/tidsbegrænset; respektér zoneregler og tider."
+  },
+  {
+    id: "kbh-vanlose-st",
+    name: "Vanløse Station (3 timers gratis)",
+    address: "Vanløse Allé 40, 2720 Vanløse",
+    lat: 55.6909, lon: 12.4920,
+    info: "3 timers gratis hverdage; se lokal skiltning."
+  },
+  // Roskilde eksempel
+  {
+    id: "roskilde-station",
+    name: "Roskilde Station – gratis i perioder",
+    address: "Jernbanegade, 4000 Roskilde",
+    lat: 55.6410, lon: 12.0876,
+    info: "Gratis ved udvalgte tider/ordninger; tjek lokal skiltning."
+  }
+];
 
-function hideSearchResults() {
-  searchResultsBox.classList.add('hidden');
-  searchResultsBox.innerHTML = '';
+// Merge with user places
+function buildData() {
+  const userPlaces = loadUserPlaces();
+  parkingData = [...baseParkingData, ...userPlaces];
 }
-function showNoResults() {
-  searchResultsBox.innerHTML = '<div class="no-results">Ingen resultater</div>';
-  searchResultsBox.classList.remove('hidden');
-}
-function renderSearchResults(items) {
-  const ul = document.createElement('ul');
-  items.forEach(spot => {
-    const li = document.createElement('li');
-    li.textContent = `${spot.name} — ${spot.address || 'Ukendt adresse'}`;
-    li.addEventListener('click', () => {
-      map.setView([spot.lat, spot.lng], 14);
-      spot.marker && spot.marker.openPopup();
-      searchInput.value = '';
-      hideSearchResults();
-      renderNearbyAll(userLat, userLng);
+
+// Render markers
+function renderMarkers() {
+  markersLayer.clearLayers();
+  parkingData.forEach(p => {
+    if (!isInsideBBox(p.lat, p.lon, areaBBox)) return;
+    const marker = L.marker([p.lat, p.lon], {
+      icon: L.icon({
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        iconSize: [25,41],
+        iconAnchor: [12,41],
+        popupAnchor: [1,-34],
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        shadowSize: [41,41]
+      })
     });
-    ul.appendChild(li);
+    const html = `
+      <div class="popup">
+        <div class="title">${p.name}</div>
+        <div class="addr">${p.address}</div>
+        <div class="row" style="margin-top:8px; display:flex; gap:8px;">
+          <button class="btn btn-outline" data-id="${p.id}" onclick="openInfo('${p.id}')">Vis info</button>
+        </div>
+      </div>
+    `;
+    marker.bindPopup(html);
+    markersLayer.addLayer(marker);
   });
-  searchResultsBox.innerHTML = '';
-  searchResultsBox.appendChild(ul);
-  searchResultsBox.classList.remove('hidden');
 }
 
-searchInput.addEventListener('input', () => {
-  const q = searchInput.value.trim();
-  const qLower = q.toLowerCase();
+// Nearest list
+function refreshNearest() {
+  buildData();
+  renderMarkers();
+  const label = document.getElementById('contextLabel');
+  let refPoint = null;
 
-  if (!qLower) {
-    hideSearchResults();
-    renderNearbyAll(userLat, userLng);
-    return;
+  if (userLatLng) {
+    refPoint = userLatLng;
+    label.textContent = "Ud fra din lokation";
+  } else if (areaBBox) {
+    const [minLon, minLat, maxLon, maxLat] = areaBBox;
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLon = (minLon + maxLon) / 2;
+    refPoint = [centerLat, centerLon];
+    label.textContent = "Ud fra valgt område";
+  } else {
+    refPoint = [55.6761, 12.5683]; // København
+    label.textContent = "Ud fra København (standard)";
   }
 
-  // 1) Area match first
-  const area = findArea(qLower);
-  let matches = [];
-  if (area) {
-    const [clat, clng] = area.center;
-    matches = parkingSpots.filter(s => {
-      if (!isInDenmark(s.lat, s.lng)) return false;
-      const d = distanceKm(clat, clng, s.lat, s.lng);
-      return d <= area.radiusKm;
-    });
-  }
+  const withinArea = parkingData.filter(p => isInsideBBox(p.lat, p.lon, areaBBox));
+  const ranked = withinArea
+    .map(p => ({
+      ...p,
+      distanceKm: kmDistance(refPoint[0], refPoint[1], p.lat, p.lon)
+    }))
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, 5);
 
-  // 2) Fallback: name/address contains
-  if (matches.length === 0) {
-    matches = parkingSpots.filter(s =>
-      (s.name || '').toLowerCase().includes(qLower) ||
-      (s.address || '').toLowerCase().includes(qLower)
-    );
-  }
-
-  if (matches.length > 0) renderSearchResults(matches);
-  else showNoResults();
-});
-
-clearSearch.addEventListener('click', () => {
-  searchInput.value = '';
-  hideSearchResults();
-  renderNearbyAll(userLat, userLng);
-});
-
-// Close dropdown when clicking outside
-document.addEventListener('click', (e) => {
-  const wrapper = document.querySelector('.search-wrapper');
-  if (!wrapper.contains(e.target) && !searchResultsBox.contains(e.target)) {
-    hideSearchResults();
-  }
-});
-// Close dropdown with ESC
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') hideSearchResults();
-});
-
-/* =========================
-   Load ALL spots from local JSON
-   ========================= */
-function loadLocalSpotsJSON() {
-  fetch('parkingSpots.json')
-    .then(res => res.json())
-    .then(data => {
-      const dkOnly = validateAndKeepDK(data);
-      parkingSpots = dkOnly;
-      // Add all to map
-      parkingSpots.forEach(addSpotToMap);
-      // Fit to all
-      fitAllDKSpotsInitially();
-      // Render list
-      renderNearbyAll(userLat, userLng);
-    })
-    .catch(err => {
-      console.error("Kunne ikke indlæse parkingSpots.json:", err);
-      // Even if JSON fails, still render empty list so UI is consistent
-      renderNearbyAll(userLat, userLng);
-    });
+  const ul = document.getElementById('nearestList');
+  ul.innerHTML = ranked.map(r => `
+    <li>
+      <div>
+        <div class="title">${r.name}</div>
+        <div class="addr">${r.address}</div>
+      </div>
+      <div class="distance">${r.distanceKm} km</div>
+    </li>
+  `).join('');
 }
 
-/* =========================
-   Initial render
-   ========================= */
-loadLocalSpotsJSON();
-initGeolocationAndNearby();
+// Open info modal
+window.openInfo = function(id) {
+  const p = parkingData.find(x => x.id === id);
+  if (!p) return;
+  const info = `
+    <div style="display:grid; gap:6px;">
+      <div><strong>Navn:</strong> ${p.name}</div>
+      <div><strong>Adresse:</strong> ${p.address}</div>
+      <div><strong>Info:</strong> ${p.info || "—"}</div>
+      <div><strong>Koordinater:</strong> ${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}</div>
+    </div>
+  `;
+  document.getElementById('infoContent').innerHTML = info;
+  toggleModal('infoModal', true);
+};
 
+// Modal toggles
+function toggleModal(id, open) {
+  const m = document.getElementById(id);
+  m.setAttribute('aria-hidden', open ? 'false' : 'true');
+}
+
+// Add modal handlers
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+
+  document.getElementById('addBtn').addEventListener('click', () => toggleModal('addModal', true));
+  document.getElementById('closeModal').addEventListener('click', () => toggleModal('addModal', false));
+  document.getElementById('closeInfoModal').addEventListener('click', () => toggleModal('infoModal', false));
+
+  document.getElementById('useMyLocation').addEventListener('click', async () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      const adr = await reverseGeocodeDK(lat, lon);
+      document.getElementById('placeAddress').value = adr || '';
+    }, () => {}, { enableHighAccuracy: true, timeout: 8000 });
+  });
+
+  document.getElementById('savePlace').addEventListener('click', async () => {
+    const name = document.getElementById('placeName').value.trim();
+    const address = document.getElementById('placeAddress').value.trim();
+    if (!name || !address) {
+      alert('Udfyld både navn og adresse.');
+      return;
+    }
+    const coords = await geocodeDK(address);
+    if (!coords) {
+      alert('Kunne ikke finde dansk adresse. Prøv igen.');
+      return;
+    }
+    const newPlace = {
+      id: `user-${Date.now()}`,
+      name, address,
+      lat: coords.lat,
+      lon: coords.lon,
+      info: "Tilføjet af bruger. Verificér lokale skiltning."
+    };
+    saveUserPlace(newPlace);
+    toggleModal('addModal', false);
+    refreshNearest();
+    renderMarkers();
+  });
+
+  document.getElementById('searchBtn').addEventListener('click', doAreaSearch);
+  document.getElementById('searchInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doAreaSearch();
+  });
 });
+
+// Geocode area in DK
+async function doAreaSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  const url = `${NOMINATIM_SEARCH}?q=${encodeURIComponent(q)}&format=json&addressdetails=1&limit=1&countrycodes=dk`;
+  const res = await fetch(url, { headers: { 'Accept-Language': 'da' } });
+  if (!res.ok) { alert('Søgning mislykkedes.'); return; }
+  const data = await res.json();
+  if (!data.length) { alert('Ingen danske resultater for området.'); return; }
+  const item = data[0];
+  areaBBox = item.boundingbox ? [item.boundingbox[2], item.boundingbox[0], item.boundingbox[3], item.boundingbox[1]] : null;
+  const lat = parseFloat(item.lat), lon = parseFloat(item.lon);
+  map.setView([lat, lon], 12);
+  refreshNearest();
+  renderMarkers();
+}
+
+// DK geocode address → coords
+async function geocodeDK(address) {
+  const url = `${NOMINATIM_SEARCH}?q=${encodeURIComponent(address)}&format=json&addressdetails=1&limit=1&countrycodes=dk`;
+  const res = await fetch(url, { headers: { 'Accept-Language': 'da' } });
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data.length) return null;
+  return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+}
+
+// DK reverse geocode coords → address
+async function reverseGeocodeDK(lat, lon) {
+  const url = `${NOMINATIM_REVERSE}?lat=${lat}&lon=${lon}&format=json&addressdetails=1&zoom=18`;
+  const res = await fetch(url, { headers: { 'Accept-Language': 'da' } });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const a = data.address || {};
+  // Build human-readable Danish address
+  const parts = [
+    a.road, a.house_number,
+    a.postcode, a.city || a.town || a.village
+  ].filter(Boolean);
+  // Enforce Denmark only
+  if ((a.country_code || '').toLowerCase() !== 'dk') return null;
+  return parts.join(' ');
+}
