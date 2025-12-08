@@ -4,17 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>FreePark – Gratis parkering i Danmark</title>
+
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#f8f8f8" />
   <link rel="icon" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4QpM5rjM2G8G8rW0PjvJf3wVvQ3LkG2f2Qqf2Q6Z94="
-    crossorigin=""
-  />
+
+  <!-- Leaflet CSS (ingen integrity/crossorigin for maximal kompatibilitet) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -80,11 +77,7 @@
   </div>
 
   <!-- Leaflet JS -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-o9N1jVo3bDc3r4GqY8C1fZ+z9zQ6Q2nTtG8vY+4J2vM="
-    crossorigin=""
-  ></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
