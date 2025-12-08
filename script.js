@@ -1,9 +1,9 @@
-// Simpel FreePark – kun kort, lokation og pins
+// Simpelt FreePark – kun kort, lokation og pins
 
 let map, userMarker;
 
-// Startkort i København
 function initMap() {
+  // Start i København
   map = L.map("map").setView([55.6761, 12.5683], 13);
 
   // Lys baggrund
@@ -38,4 +38,4 @@ function initMap() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", initMap);
+document.addEventListener("DOMContentLoaded", initMap
