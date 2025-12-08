@@ -1,4 +1,4 @@
-/* script.js - FreePark (reliable map init & UI) */
+/* script.js - FriPark (reliable map init & UI) */
 document.addEventListener('DOMContentLoaded', () => {
 
   // Data: få, men udbyg selv senere
