@@ -1,232 +1,256 @@
-/* FreePark – ultra-stabil rebuild
-   Fokus: Det virker. Enkle afhængigheder, korrekt kort-højde, DK-only geokodning.
+/* Clean, Apple-like parking map
+   - All markers shown on a calm map
+   - Clicking shows name + address + "Vis info"
+   - Bottom sheet contains factual parking notes
+   - Coordinates are internal only; never displayed
 */
 
-const NOMINATIM_SEARCH = "https://nominatim.openstreetmap.org/search";
-const NOMINATIM_REVERSE = "https://nominatim.openstreetmap.org/reverse";
-
-let map, markersLayer, userMarker;
-let userLatLng = null;
-let areaBBox = null; // [minLon, minLat, maxLon, maxLat]
-
-let parkingData = [];
-let baseParkingData = [
+// ===== Sample data (REPLACE with verified, factual spots) =====
+// Structure:
+// {
+//   id: "unique-id",
+//   name: "Navn på parkeringssted",
+//   address: "Adresse, Postnummer By",
+//   lat: 55.XXXX, lng: 12.XXXX,   // Internal only
+//   facts: ["Kort tekst om regler eller tider", ...],
+//   notes: "Valgfri ekstra info, begrænsninger, særlige forhold.",
+//   verified: true|false
+// }
+const parkingSpots = [
   {
-    id: "kbh-vanlose-st",
-    name: "Vanløse Station (3 timers gratis)",
-    address: "Vanløse Allé 40, 2720 Vanløse",
-    lat: 55.6909, lon: 12.4920,
-    info: "3 timers gratis hverdage; tjek skiltning."
+    id: "krbh-østergade-24",
+    name: "Østergade P-område",
+    address: "Østergade 24, 1100 København K",
+    lat: 55.679188, lng: 12.579588,
+    facts: [
+      "Fri parkering efter 18:00 på hverdage (zoneregler kan variere)",
+      "3 timer gratis lørdag mellem 10:00–18:00 (bekræft lokale skilte)"
+    ],
+    notes: "Kontrollér altid lokale skilte for gældende tider og undtagelser.",
+    verified: false
   },
   {
-    id: "roskilde-st",
-    name: "Roskilde Station – gratis i perioder",
-    address: "Jernbanegade, 4000 Roskilde",
-    lat: 55.6410, lon: 12.0876,
-    info: "Gratis ved udvalgte tider; tjek skiltning."
+    id: "frederiksberg-solbjergplads",
+    name: "Solbjerg Plads område",
+    address: "Solbjerg Plads, 2000 Frederiksberg",
+    lat: 55.68066, lng: 12.52367,
+    facts: [
+      "Begrænset gratis periode for beboere (kræver beboerlicens)",
+      "Fri parkering søn- og helligdage i visse lommer"
+    ],
+    notes: "Områderegler opdateres jævnligt af kommunen.",
+    verified: false
+  },
+  {
+    id: "valby-spinderiet",
+    name: "Valby Spinderiet",
+    address: "Spinderiet, 2500 Valby",
+    lat: 55.66179, lng: 12.50520,
+    facts: [
+      "3 timer gratis ved indkøb (butikscenter-betingelser)",
+      "Overtrædelse kan medføre kontrolafgift"
+    ],
+    notes: "Læs centerets p-skilte for aktuelle betingelser.",
+    verified: false
   }
 ];
 
-const LS_KEY = "freepark_user_places";
-function loadUserPlaces() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-function saveUserPlace(place) {
-  const list = loadUserPlaces();
-  list.push(place);
-  localStorage.setItem(LS_KEY, JSON.stringify(list));
-}
+// ===== Map init =====
+const map = L.map("map", {
+  zoomControl: true,
+  attributionControl: true
+});
 
-function kmDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 +
-            Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) *
-            Math.sin(dLon/2)**2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return Math.round((R * c + Number.EPSILON) * 100) / 100;
-}
+// OpenStreetMap tile: neutral base; styled via UI for a clean feel
+const tileLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19,
+  attribution: "© OpenStreetMap"
+}).addTo(map);
 
-function createUserLocationIcon() {
-  return L.divIcon({
-    className: 'user-location-dot',
-    iconSize: [18, 18]
-  });
-}
+// Fit map to DK; soft center Copenhagen for initial view
+map.setView([55.6761, 12.5683], 12);
 
-function isInsideBBox(lat, lon, bbox) {
-  if (!bbox) return true;
-  const [minLon, minLat, maxLon, maxLat] = bbox;
-  return lon >= minLon && lon <= maxLon && lat >= minLat && lat <= maxLat;
-}
-
-function buildData() {
-  parkingData = [...baseParkingData, ...loadUserPlaces()];
-}
-
-function initMap() {
-  const mapEl = document.getElementById('map');
-  if (!mapEl) {
-    console.error('#map mangler i DOM.');
-    return;
+// ===== Custom marker (Apple-like dot) =====
+const MarkerDot = L.DivIcon.extend({
+  options: {
+    className: "",
+    html: '<div class="marker-dot" aria-hidden="true"></div>',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -12]
   }
-  if (mapEl.clientHeight < 100) {
-    mapEl.style.height = '80vh';
-  }
+});
+const markerDot = new MarkerDot();
 
-  map = L.map('map').setView([55.6761, 12.5683], 12);
+// ===== UI elements =====
+const inlineCard = document.getElementById("inlineCard");
+const cardName = document.getElementById("cardName");
+const cardAddress = document.getElementById("cardAddress");
+const cardBadge = document.getElementById("cardBadge");
+const infoButton = document.getElementById("infoButton");
+const closeCardBtn = document.getElementById("closeCard");
 
-  // Clean, Apple-agtig light map fra Carto
-  L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    {
-      attribution: '© OpenStreetMap © CARTO',
-      subdomains: 'abcd',
-      maxZoom: 20
-    }
-  ).addTo(map);
+const sheet = document.getElementById("sheet");
+const sheetBackdrop = document.getElementById("sheetBackdrop");
+const sheetTitle = document.getElementById("sheetTitle");
+const sheetAddress = document.getElementById("sheetAddress");
+const sheetBadge = document.getElementById("sheetBadge");
+const sheetFacts = document.getElementById("sheetFacts");
+const sheetNotes = document.getElementById("sheetNotes");
+const closeSheetBtn = document.getElementById("closeSheet");
 
-  markersLayer = L.layerGroup().addTo(map);
+const aboutButton = document.getElementById("aboutButton");
 
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        userLatLng = [pos.coords.latitude, pos.coords.longitude];
-        map.setView(userLatLng, 14);
-        userMarker = L.marker(userLatLng, { icon: createUserLocationIcon(), interactive: false }).addTo(map);
-        refreshNearest();
-      },
-      () => { refreshNearest(); },
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
+// ===== State =====
+let currentSpotId = null;
+let markers = [];
+
+// ===== Helpers =====
+function openInlineCard(spot) {
+  cardName.textContent = spot.name;
+  cardAddress.textContent = spot.address;
+
+  if (spot.verified) {
+    cardBadge.hidden = false;
   } else {
-    refreshNearest();
+    cardBadge.hidden = true;
   }
+  inlineCard.hidden = false;
 }
 
-function renderMarkers() {
-  markersLayer.clearLayers();
-  parkingData.forEach(p => {
-    if (!isInsideBBox(p.lat, p.lon, areaBBox)) return;
-    const marker = L.marker([p.lat, p.lon]);
-    const html = `
-      <div class="popup">
-        <div class="title">${p.name}</div>
-        <div class="addr">${p.address}</div>
-        <div style="margin-top:8px; display:flex; gap:8px;">
-          <button class="btn btn-outline" onclick="openInfo('${p.id}')">Vis info</button>
-        </div>
-      </div>
-    `;
-    marker.bindPopup(html);
-    markersLayer.addLayer(marker);
-  });
+function closeInlineCard() {
+  inlineCard.hidden = true;
+  currentSpotId = null;
 }
 
-function refreshNearest() {
-  buildData();
-  renderMarkers();
+function openSheet(spot) {
+  sheetTitle.textContent = spot.name;
+  sheetAddress.textContent = spot.address;
+  sheetBadge.hidden = !spot.verified;
 
-  const label = document.getElementById('contextLabel');
-  let refPoint;
-
-  if (userLatLng) {
-    refPoint = userLatLng;
-    label.textContent = "Ud fra din lokation";
-  } else if (areaBBox) {
-    const [minLon, minLat, maxLon, maxLat] = areaBBox;
-    refPoint = [(minLat + maxLat) / 2, (minLon + maxLon) / 2];
-    label.textContent = "Ud fra valgt område";
-  } else {
-    refPoint = [55.6761, 12.5683];
-    label.textContent = "Ud fra København (standard)";
-  }
-
-  const withinArea = parkingData.filter(p => isInsideBBox(p.lat, p.lon, areaBBox));
-  const ranked = withinArea
-    .map(p => ({ ...p, distanceKm: kmDistance(refPoint[0], refPoint[1], p.lat, p.lon) }))
-    .sort((a, b) => a.distanceKm - b.distanceKm)
-    .slice(0, 5);
-
-  const ul = document.getElementById('nearestList');
-  ul.innerHTML = ranked.map(r => `
-    <li>
-      <div>
-        <div class="title">${r.name}</div>
-        <div class="addr">${r.address}</div>
-      </div>
-      <div class="distance">${r.distanceKm} km</div>
-    </li>
-  `).join('');
-}
-
-window.openInfo = function(id) {
-  const p = parkingData.find(x => x.id === id);
-  if (!p) return;
-
-  const infoHtml = `
-    <div style="display:grid; gap:6px;">
-      <div><strong>Navn:</strong> ${p.name}</div>
-      <div><strong>Adresse:</strong> ${p.address}</div>
-      <div><strong>Info:</strong> ${p.info ? p.info : "—"}</div>
-    </div>
-  `;
-
-  const infoBox = document.getElementById('infoContent');
-  if (infoBox) {
-    infoBox.innerHTML = infoHtml;
-    toggleModal('infoModal', true);
-  }
-};
-
-function toggleModal(id, open) {
-  const m = document.getElementById(id);
-  if (!m) return;
-  m.setAttribute('aria-hidden', open ? 'false' : 'true');
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  initMap();
-
-  document.getElementById('addBtn').addEventListener('click', () => toggleModal('addModal', true));
-  document.getElementById('closeModal').addEventListener('click', () => toggleModal('addModal', false));
-  document.getElementById('closeInfoModal').addEventListener('click', () => toggleModal('infoModal', false));
-
-  document.getElementById('useMyLocation').addEventListener('click', () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const adr = await reverseGeocodeDK(pos.coords.latitude, pos.coords.longitude);
-      document.getElementById('placeAddress').value = adr || '';
+  // Build facts list
+  sheetFacts.innerHTML = "";
+  if (Array.isArray(spot.facts)) {
+    spot.facts.forEach(text => {
+      const li = document.createElement("li");
+      const icon = document.createElement("div");
+      icon.className = "icon";
+      const p = document.createElement("div");
+      p.className = "text";
+      p.textContent = text;
+      li.appendChild(icon);
+      li.appendChild(p);
+      sheetFacts.appendChild(li);
     });
-  });
+  }
 
-  document.getElementById('savePlace').addEventListener('click', async () => {
-    const name = document.getElementById('placeName').value.trim();
-    const address = document.getElementById('placeAddress').value.trim();
-    if (!name || !address) {
-      alert('Udfyld både navn og adresse.');
-      return;
-    }
-    const coords = await geocodeDK(address);
-    if (!coords) {
-      alert('Kunne ikke finde dansk adresse. Prøv igen.');
-      return;
-    }
-    const newPlace = {
-      id: `user-${Date.now()}`,
-      name, address,
-      lat: coords.lat,
-      lon: coords.lon,
-      info: "Tilføjet af bruger. Tjek lokal skiltning."
-    };
-    saveUserPlace(newPlace);
-    toggleModal('addModal', false);
-    refreshNearest();
-    renderMarkers();
-  });
+  // Optional notes
+  if (spot.notes && spot.notes.trim().length > 0) {
+    sheetNotes.hidden = false;
+    sheetNotes.textContent = spot.notes;
+  } else {
+    sheetNotes.hidden = true;
+    sheetNotes.textContent = "";
+  }
 
-  const doArea
+  sheet.hidden = false;
+}
+
+function closeSheet() {
+  sheet.hidden = true;
+}
+
+// ===== Events =====
+infoButton.addEventListener("click", () => {
+  if (!currentSpotId) return;
+  const spot = parkingSpots.find(s => s.id === currentSpotId);
+  if (spot) openSheet(spot);
+});
+
+closeCardBtn.addEventListener("click", closeInlineCard);
+sheetBackdrop.addEventListener("click", closeSheet);
+closeSheetBtn.addEventListener("click", closeSheet);
+
+aboutButton.addEventListener("click", () => {
+  // Simple inline info (non-modal) for now
+  const tmplFacts = [
+    "Klik på markører for navn og adresse.",
+    "Tryk 'Vis info' for regler som 3 timer gratis eller fri efter 18.",
+    "Alle oplysninger bør verificeres mod lokale skilte og kommunale kilder."
+  ];
+  sheetTitle.textContent = "Om appen";
+  sheetAddress.textContent = "Faktuel, dansk parkering";
+  sheetBadge.hidden = true;
+  sheetFacts.innerHTML = "";
+  tmplFacts.forEach(t => {
+    const li = document.createElement("li");
+    const icon = document.createElement("div");
+    icon.className = "icon";
+    const p = document.createElement("div");
+    p.className = "text";
+    p.textContent = t;
+    li.appendChild(icon);
+    li.appendChild(p);
+    sheetFacts.appendChild(li);
+  });
+  sheetNotes.hidden = false;
+  sheetNotes.textContent = "Erstat sample-data i script.js med verificerede steder. Koordinater bruges kun internt og vises ikke.";
+  sheet.hidden = false;
+});
+
+// Keyboard accessibility
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    if (!sheet.hidden) closeSheet();
+    if (!inlineCard.hidden) closeInlineCard();
+  }
+});
+
+// ===== Render markers =====
+function addMarkers() {
+  // Clear old
+  markers.forEach(m => m.remove());
+  markers = [];
+
+  parkingSpots.forEach(spot => {
+    const marker = L.marker([spot.lat, spot.lng], { icon: markerDot, title: spot.name })
+      .addTo(map);
+
+    marker.on("click", () => {
+      currentSpotId = spot.id;
+      openInlineCard(spot);
+    });
+
+    markers.push(marker);
+  });
+}
+
+addMarkers();
+
+// Fit bounds to all markers (if multiple)
+(function fitToMarkers() {
+  if (markers.length === 0) return;
+  const group = new L.FeatureGroup(markers);
+  const bounds = group.getBounds();
+  if (bounds.isValid()) {
+    map.fitBounds(bounds, { padding: [40, 40] });
+  }
+})();
+
+// Prevent double-tap zoom interfering with sheet
+sheet.addEventListener("touchstart", (e) => {
+  e.stopPropagation();
+}, { passive: true });
+
+// ===== Production notes =====
+//
+// 1) Replace 'parkingSpots' with a curated, factual list.
+//    Do not show coordinates in UI; they are only for marker placement.
+//
+// 2) For verified spots, set verified: true to display the green "Verificeret" badge.
+//
+// 3) Keep facts short, clear, and local (e.g., "Fri parkering efter 18" or "3 timer gratis").
+//    Avoid ambiguous wording; prefer what is on official signage.
+//
+// 4) If you later add filters or area-based search, keep UI calm and uncluttered.
+//
