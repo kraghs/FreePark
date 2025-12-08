@@ -74,5 +74,49 @@ document.addEventListener('DOMContentLoaded', () => {
       renderNearby(userLat,userLng);
     }, ()=>alert('Kunne ikke hente lokation'));
   });
+// =========================
+// Søg
+// =========================
+const searchInput = document.getElementById('searchInput');
+const searchResults = document.getElementById('searchResults');
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  searchResults.innerHTML = '';
+  if (!q) {
+    searchResults.classList.add('hidden');
+    return;
+  }
+
+  const matches = parkingSpots.filter(s => 
+    s.name.toLowerCase().includes(q) || s.address.toLowerCase().includes(q)
+  );
+
+  if (matches.length === 0) {
+    searchResults.classList.add('hidden');
+    return;
+  }
+
+  matches.forEach(spot => {
+    const row = document.createElement('div');
+    row.className = 'result';
+    row.innerHTML = `
+      <div>
+        <strong>${spot.name}</strong><br>
+        <small>${spot.address}</small>
+      </div>
+    `;
+    row.addEventListener('click', () => {
+      map.setView([spot.lat, spot.lng], 14);
+      if (spot.marker) spot.marker.openPopup();
+      openInfoModal(spot);
+      searchResults.classList.add('hidden');
+      searchInput.value = '';
+    });
+    searchResults.appendChild(row);
+  });
+
+  searchResults.classList.remove('hidden');
+});
 
 });
