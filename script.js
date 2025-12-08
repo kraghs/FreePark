@@ -175,14 +175,22 @@ function refreshNearest() {
 window.openInfo = function(id) {
   const p = parkingData.find(x => x.id === id);
   if (!p) return;
-  const info = `
+
+  const infoHtml = `
     <div style="display:grid; gap:6px;">
       <div><strong>Navn:</strong> ${p.name}</div>
       <div><strong>Adresse:</strong> ${p.address}</div>
-      <div><strong>Info:</strong> ${p.info || "—"}</div>
-      <div><strong>Koordinater:</strong> ${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}</div>
+      <div><strong>Info:</strong> ${p.info ? p.info : "—"}</div>
     </div>
   `;
+
+  const infoBox = document.getElementById('infoContent');
+  if (infoBox) {
+    infoBox.innerHTML = infoHtml;
+    toggleModal('infoModal', true);
+  }
+};
+  ;
   document.getElementById('infoContent').innerHTML = info;
   toggleModal('infoModal', true);
 };
