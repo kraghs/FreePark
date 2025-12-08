@@ -1,59 +1,69 @@
 <!doctype html>
 <html lang="da">
 <head>
-  <meta charset="utf-8">
-  <title>FreePark – Gratis parkering i Danmark</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FreePark — Gratis parkering i Danmark</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="app-header">
-    <div class="brand">🚗 FreePark</div>
-    <div class="search-wrapper">
-      <input id="searchInput" type="text" placeholder="Søg område (fx København)">
-      <button id="searchBtn">Søg</button>
+  <div id="app">
+    <header class="topbar">
+      <input id="searchInput" placeholder="Søg by eller område (fx 'København')" />
+      <button id="searchBtn" title="Søg">🔍</button>
+    </header>
+
+    <main>
+      <div id="map"></div>
+
+      <div class="fab-container">
+        <button id="locateBtn" class="fab small" title="Find mig">◎</button>
+        <button id="addBtn" class="fab" title="Tilføj parkeringsplads">＋</button>
+      </div>
+
+      <aside class="bottom-sheet" id="bottomSheet">
+        <h3>Nærmeste gratis parkeringspladser</h3>
+        <ul id="nearList"></ul>
+      </aside>
+    </main>
+
+    <!-- Add form modal -->
+    <div id="addModal" class="modal hidden">
+      <div class="modal-content">
+        <h4>Tilføj parkeringsplads</h4>
+        <label>Navn
+          <input id="addName" />
+        </label>
+        <label>Adresse
+          <div class="address-row">
+            <input id="addAddress" />
+            <button id="useMyLocation">Brug min lokation</button>
+          </div>
+        </label>
+        <label>Info (fx "3 timer gratis" eller "Fri parkering efter 18")
+          <input id="addInfo" />
+        </label>
+        <div class="modal-actions">
+          <button id="saveAdd">Gem</button>
+          <button id="cancelAdd">Annuller</button>
+        </div>
+      </div>
     </div>
-  </header>
 
-  <main>
-    <div id="map"></div>
-
-    <div class="floating-controls">
-      <button id="locateBtn" title="Brug min lokation">📍</button>
-      <button id="addBtn" title="Tilføj parkeringsplads">➕</button>
+    <!-- Info modal -->
+    <div id="infoModal" class="modal hidden">
+      <div class="modal-content">
+        <h4 id="infoName"></h4>
+        <p id="infoAddress"></p>
+        <p id="infoText"></p>
+        <div class="modal-actions">
+          <button id="closeInfo">Luk</button>
+        </div>
+      </div>
     </div>
 
-    <section class="list-section">
-      <h2>Nærmeste gratis parkeringspladser</h2>
-      <ul id="nearestList"></ul>
-    </section>
-  </main>
-
-  <!-- Modal til tilføjelse -->
-  <div id="addModal" class="modal">
-    <div class="modal-card">
-      <h3>Tilføj parkeringsplads</h3>
-      <form id="addForm">
-        <input id="placeName" placeholder="Navn" required>
-        <input id="placeAddress" placeholder="Adresse" required>
-        <button type="button" id="useMyLocationBtn">Brug min lokation</button>
-        <input id="placeInfo" placeholder="Info (fx 3 timer gratis)" required>
-        <button type="submit">Tilføj</button>
-        <button type="button" id="addCancelBtn">Annuller</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal til info -->
-  <div id="infoModal" class="modal">
-    <div class="modal-card">
-      <h3>Detaljer</h3>
-      <div id="infoContent"></div>
-      <button id="infoCloseBtn">Luk</button>
-    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
