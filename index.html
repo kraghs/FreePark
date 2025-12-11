@@ -64,12 +64,31 @@
       <div id="infoNote" class="note">Info</div>
       <div class="row">
         <button id="closeInfoBtn" class="small">Luk</button>
+        <button id="reportSpotBtn" class="small danger" style="margin-left:auto;">Rapporter et problem</button>
       </div>
     </div>
   </div>
 
+  <!-- Rapport modal -->
+  <div id="reportModal" class="modal hidden">
+    <div class="modalInner">
+      <h4>Rapporter et problem</h4>
+      <label>Navn <input id="reportName" placeholder="Dit navn"/></label>
+      <label>Email <input id="reportEmail" placeholder="Din email"/></label>
+      <label>Problem <textarea id="reportProblem" placeholder="Beskriv problemet" rows="3"></textarea></label>
+      <div class="row">
+        <button id="cancelReportBtn" class="small">Annuller</button>
+        <button id="sendReportBtn" class="small primary">Send rapport</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fejl på siden knap -->
+  <button id="reportSiteBtn" class="floatingReportBtn">!</button>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
