@@ -5,7 +5,7 @@ let userLat=55.6761, userLng=12.5683;
 let map = L.map('map').setView([userLat,userLng],11);
 let userMarker;
 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
   attribution:'&copy; OpenStreetMap & CARTO', subdomains:'abcd', maxZoom:20
 }).addTo(map);
 
@@ -16,7 +16,7 @@ function distanceKm(lat1,lon1,lat2,lon2){
   return 2*R*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-// Brugers position som Apple Maps-stil blå cirkel med hvid kant
+// Brugers position
 function showUserLocation(lat,lng){
   if(userMarker) map.removeLayer(userMarker);
   userMarker = L.circleMarker([lat,lng],{
@@ -35,7 +35,7 @@ axios.get('spots.json').then(resp=>{
   renderNearby();
 }).catch(console.error);
 
-// Tilføj marker
+// Marker
 function addSpotMarker(spot){
   const marker=L.circleMarker([spot.lat,spot.lng],{radius:6,color:'#0bb07b',weight:2,fillColor:'#00c07b',fillOpacity:1}).addTo(map);
   const popupHtml=`<strong>${escapeHtml(spot.name)}</strong><br>${escapeHtml(spot.address)}<br>
@@ -48,10 +48,10 @@ function addSpotMarker(spot){
   });
 }
 
-// Render nærmeste spots
-const parkingListEl=document.getElementById('parkingList');
+// Render nearby
 function renderNearby(centerLat=userLat,centerLng=userLng){
-  parkingListEl.innerHTML='';
+  const listEl=document.getElementById('parkingList');
+  listEl.innerHTML='';
   parkingSpots.map(s=>({...s,dist:distanceKm(centerLat,centerLng,s.lat,s.lng)}))
     .sort((a,b)=>a.dist-b.dist).slice(0,5)
     .forEach(spot=>{
@@ -61,7 +61,7 @@ function renderNearby(centerLat=userLat,centerLng=userLng){
       btn.addEventListener('click',e=>{e.stopPropagation(); openInfoModal(spot)});
       li.appendChild(btn);
       li.addEventListener('click',()=>{map.setView([spot.lat,spot.lng],14); if(spot.marker) spot.marker.openPopup()});
-      parkingListEl.appendChild(li);
+      listEl.appendChild(li);
     });
 }
 
@@ -79,7 +79,7 @@ const addSpotBox=document.getElementById('addSpotBox');
 document.getElementById('toggleAddBtn').addEventListener('click',()=>addSpotBox.classList.remove('hidden'));
 document.getElementById('cancelAddBtn').addEventListener('click',()=>addSpotBox.classList.add('hidden'));
 
-// Brug min lokation i input
+// Brug min lokation i adressefelt
 document.getElementById('useMyLocationAddBtn').addEventListener('click',()=>{
   if(!navigator.geolocation){ alert('Din browser understøtter ikke geolokation'); return; }
   navigator.geolocation.getCurrentPosition(pos=>{
@@ -98,7 +98,6 @@ document.getElementById('addSpotBtn').addEventListener('click',()=>{
   const note=document.getElementById('spotInfo').value.trim();
   if(!name||!address){ alert('Udfyld både navn og adresse'); return; }
 
-  // midlertidigt placering = center på kort
   const latLng=map.getCenter();
   const spot={name,address,note,lat:latLng.lat,lng:latLng.lng};
   parkingSpots.push(spot);
@@ -110,8 +109,8 @@ document.getElementById('addSpotBtn').addEventListener('click',()=>{
   document.getElementById('spotInfo').value='';
 });
 
-// Brug min lokation (blå cirkel)
-document.getElementById('useMyLocationBtn')?.addEventListener('click',()=>{
+// Brug min lokation knap
+document.getElementById('useMyLocationBtn').addEventListener('click',()=>{
   if(!navigator.geolocation){ alert('Din browser understøtter ikke geolokation'); return; }
   navigator.geolocation.getCurrentPosition(pos=>{
     userLat=pos.coords.latitude; userLng=pos.coords.longitude;
@@ -124,6 +123,7 @@ document.getElementById('useMyLocationBtn')?.addEventListener('click',()=>{
 // Søg funktion
 const searchInput=document.getElementById('searchInput');
 const searchResults=document.getElementById('searchResults');
+
 function hideSearchResults(){ searchResults.innerHTML=''; searchResults.style.display='none'; }
 function showSearchResults(){ searchResults.style.display='block'; }
 
