@@ -6,27 +6,25 @@
   <title>FriPark — Gratis parkering DK</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <meta name="theme-color" content="#0a84ff" />
 </head>
 <body>
   <header class="topbar">
     <div class="brand">FriPark</div>
-    <div class="subtitle"> Find gratis parkering i Danmark — Husk altid at tjekke skilte</div>
+    <div class="subtitle">Find gratis parkering i Danmark — Husk altid at tjekke skilte</div>
   </header>
 
   <main>
     <div class="searchWrap">
       <input id="searchInput" placeholder="Søg by eller adresse (fx 'København')" autocomplete="off" />
-      <div id="searchResults" class="hidden"></div>
+      <div id="searchResults"></div>
     </div>
 
     <div id="map" aria-label="Kort over parkeringspladser"></div>
 
     <div class="controls">
-      <button id="useMyLocationBtn" class="small primary">Brug min lokation</button>
-      <button id="toggleAddBtn" class="small">➕ Tilføj spot</button>
+      <button id="toggleAddBtn" class="small primary">➕ Tilføj spot</button>
     </div>
 
     <section class="listWrap">
@@ -35,14 +33,19 @@
     </section>
   </main>
 
+  <!-- Modal til at tilføje spot -->
   <div id="addSpotBox" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modalInner">
       <h4>Tilføj gratis parkering</h4>
       <label>Navn <input id="spotName" /></label>
-      <label>Adresse eller koordinater <input id="spotAddress" placeholder="Skriv adresse eller tryk 'Brug min lokation'"/></label>
+      <label>Adresse
+        <div class="inputWithButton">
+          <input id="spotAddress" placeholder="Skriv adresse eller tryk 'Brug min lokation'"/>
+          <button id="useMyLocationAddBtn" class="tiny">📍</button>
+        </div>
+      </label>
+      <label>Info <input id="spotInfo" placeholder="F.eks. gratis i 2 timer eller efter 17" /></label>
       <div class="row">
-        <button id="useMyLocationAddBtn" class="small">Brug min lokation</button>
-        <div class="spacer"></div>
         <button id="cancelAddBtn" class="small">Annuller</button>
         <button id="addSpotBtn" class="small primary">Gem spot</button>
       </div>
@@ -60,9 +63,7 @@
     </div>
   </div>
 
-  <!-- Leaflet & Axios scripts (Leaflet før script.js) -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
