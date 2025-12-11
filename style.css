@@ -51,14 +51,23 @@ main{max-width:980px;margin:16px auto;padding:0 12px}
   #map{height:58vh}
   .modal{min-width:90%}
 
-  #map {
-    position: relative;
-    z-index: 1;
+  /* Ensure map is below UI and search results are above */
+#map {
+  position: relative;
+  z-index: 1;
 }
 
+/* Force search results above the map */
 #searchResults {
-    z-index: 9999 !important;
-    position: absolute;
+  position: absolute;
+  z-index: 10050 !important;
+  display: none; /* start skjult */
 }
+
+/* Visible state */
+#searchResults.visible {
+  display: block;
+}
+
 
 }
