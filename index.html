@@ -7,7 +7,6 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  <meta name="theme-color" content="#0a84ff" />
 </head>
 <body>
   <header class="topbar">
@@ -33,18 +32,22 @@
     </section>
   </main>
 
-  <!-- Modal til at tilføje spot -->
+  <!-- Tilføj spot modal -->
   <div id="addSpotBox" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modalInner">
       <h4>Tilføj gratis parkering</h4>
-      <label>Navn <input id="spotName" /></label>
+
+      <label>Navn <input id="spotName" placeholder="F.eks. Parkering ved stationen"/></label>
+
       <label>Adresse
         <div class="inputWithButton">
-          <input id="spotAddress" placeholder="Skriv adresse eller tryk 'Brug min lokation'"/>
+          <input id="spotAddress" placeholder="Skriv adresse eller tryk '📍'"/>
           <button id="useMyLocationAddBtn" class="tiny">📍</button>
         </div>
       </label>
-      <label>Info <input id="spotInfo" placeholder="F.eks. gratis i 2 timer eller efter 17" /></label>
+
+      <label>Info <input id="spotInfo" placeholder="F.eks. gratis i 2 timer eller efter 17"/></label>
+
       <div class="row">
         <button id="cancelAddBtn" class="small">Annuller</button>
         <button id="addSpotBtn" class="small primary">Gem spot</button>
@@ -52,6 +55,7 @@
     </div>
   </div>
 
+  <!-- Info modal -->
   <div id="infoModal" class="infoModal hidden" role="dialog" aria-modal="true">
     <div class="infoContent">
       <h4 id="infoTitle">Navn</h4>
