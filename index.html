@@ -24,6 +24,7 @@
 
     <div class="controls">
       <button id="toggleAddBtn" class="small primary">➕ Tilføj spot</button>
+      <button id="useMyLocationBtn" class="small">Brug min lokation</button>
     </div>
 
     <section class="listWrap">
@@ -33,7 +34,7 @@
   </main>
 
   <!-- Tilføj spot modal -->
-  <div id="addSpotBox" class="modal hidden" role="dialog" aria-modal="true">
+  <div id="addSpotBox" class="modal hidden">
     <div class="modalInner">
       <h4>Tilføj gratis parkering</h4>
 
@@ -56,7 +57,7 @@
   </div>
 
   <!-- Info modal -->
-  <div id="infoModal" class="infoModal hidden" role="dialog" aria-modal="true">
+  <div id="infoModal" class="infoModal hidden">
     <div class="infoContent">
       <h4 id="infoTitle">Navn</h4>
       <div id="infoAddress">Adresse</div>
@@ -68,6 +69,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
