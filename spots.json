@@ -734,7 +734,6 @@
     "lng": 11.555,
     "note": "Parkering ved Sorø Sø"
   },
-  [
   {
     "name": "Favrholm Station P",
     "address": "Favrholm Allé 2, 3400 Hillerød",
@@ -804,9 +803,7 @@
     "lat": 55.4700,
     "lng": 8.4500,
     "note": "Gratis parkering ved strand og marina, ingen tidsbegrænsning"
-  }
-]
-[
+  },
   {
     "name": "Favrholm Station P",
     "address": "Favrholm Allé 2, 3400 Hillerød",
