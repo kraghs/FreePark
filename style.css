@@ -16,11 +16,11 @@ body{margin:0;background:var(--bg);color:#111;-webkit-font-smoothing:antialiased
 main{max-width:980px;margin:16px auto;padding:0 12px}
 .searchWrap{position:relative;margin-bottom:10px}
 .searchWrap input{width:100%;padding:12px 14px;border-radius:12px;border:none;background:white;box-shadow:var(--shadow);font-size:15px}
-#searchResults{position:absolute;left:0;right:0;top:48px;background:white;border-radius:10px;box-shadow:var(--shadow);z-index:60;max-height:260px;overflow:auto}
-#searchResults .result{padding:10px;border-bottom:1px solid #f1f4fb;display:flex;justify-content:space-between;align-items:center}
+#searchResults{position:absolute;left:0;right:0;top:48px;background:white;border-radius:10px;box-shadow:var(--shadow);max-height:260px;overflow:auto;display:none;z-index:9999}
+#searchResults .result{padding:10px;border-bottom:1px solid #f1f4fb;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
 #searchResults .result small{color:var(--muted)}
 
-#map{width:100%;height:56vh;border-radius:12px;overflow:hidden;box-shadow:var(--shadow);border:1px solid rgba(10,10,10,0.03);}
+#map{width:100%;height:56vh;border-radius:12px;overflow:hidden;box-shadow:var(--shadow);border:1px solid rgba(10,10,10,0.03);position:relative;z-index:1;}
 
 .controls{display:flex;gap:10px;margin:10px 0}
 .small{padding:8px 10px;border-radius:10px;border:1px solid rgba(10,10,10,0.06);background:white;cursor:pointer;font-size:14px}
@@ -37,6 +37,8 @@ main{max-width:980px;margin:16px auto;padding:0 12px}
 .modal.hidden{display:none}
 .modalInner label{display:block;margin-bottom:8px;font-size:13px;color:#333}
 .modalInner input{width:100%;padding:10px;border-radius:8px;border:1px solid #eef4ff;margin-top:6px}
+.inputWithButton{position:relative;}
+.inputWithButton button.tiny{position:absolute;top:50%;right:8px;transform:translateY(-50%);padding:6px 8px;border:none;background:var(--accent);color:white;border-radius:8px;cursor:pointer;font-size:12px;}
 
 .infoModal{position:fixed;left:12px;right:12px;bottom:14px;background:var(--card);border-radius:12px;box-shadow:var(--shadow);z-index:200;padding:12px}
 .infoModal.hidden{display:none}
@@ -50,24 +52,4 @@ main{max-width:980px;margin:16px auto;padding:0 12px}
   .searchWrap input{font-size:14px}
   #map{height:58vh}
   .modal{min-width:90%}
-
-  /* Ensure map is below UI and search results are above */
-#map {
-  position: relative;
-  z-index: 1;
-}
-
-/* Force search results above the map */
-#searchResults {
-  position: absolute;
-  z-index: 10050 !important;
-  display: none; /* start skjult */
-}
-
-/* Visible state */
-#searchResults.visible {
-  display: block;
-}
-
-
 }
