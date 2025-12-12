@@ -17,7 +17,7 @@
   <main>
     <div class="searchWrap">
       <input id="searchInput" placeholder="Søg by eller adresse (fx 'København')" autocomplete="off" />
-      <div id="searchResults"></div>
+      <div id="searchResults" class="hidden" aria-hidden="true"></div>
     </div>
 
     <div id="map" aria-label="Kort over parkeringspladser"></div>
@@ -34,20 +34,24 @@
   </main>
 
   <!-- Tilføj spot modal -->
-  <div id="addSpotBox" class="modal hidden">
+  <div id="addSpotBox" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="addSpotTitle">
     <div class="modalInner">
-      <h4>Tilføj gratis parkering</h4>
+      <h4 id="addSpotTitle">Tilføj gratis parkering</h4>
 
-      <label>Navn <input id="spotName" placeholder="F.eks. Parkering ved stationen"/></label>
+      <label>Navn
+        <input id="spotName" placeholder="F.eks. Parkering ved stationen" />
+      </label>
 
       <label>Adresse
         <div class="inputWithButton">
-          <input id="spotAddress" placeholder="Skriv adresse eller tryk '📍'"/>
-          <button id="useMyLocationAddBtn" class="tiny">📍</button>
+          <input id="spotAddress" placeholder="Skriv adresse eller tryk '📍'" />
+          <button id="useMyLocationAddBtn" class="tiny" title="Brug min lokation">📍</button>
         </div>
       </label>
 
-      <label>Info <input id="spotInfo" placeholder="F.eks. gratis i 2 timer eller efter 17"/></label>
+      <label>Info
+        <input id="spotInfo" placeholder="F.eks. gratis i 2 timer eller efter 17" />
+      </label>
 
       <div class="row">
         <button id="cancelAddBtn" class="small">Annuller</button>
@@ -56,25 +60,25 @@
     </div>
   </div>
 
-  <!-- Info modal -->
-  <div id="infoModal" class="infoModal hidden">
+  <!-- Info modal (bottom) -->
+  <div id="infoModal" class="infoModal hidden" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
     <div class="infoContent">
       <h4 id="infoTitle">Navn</h4>
       <div id="infoAddress">Adresse</div>
       <div id="infoNote" class="note">Info</div>
       <div class="row">
+        <button id="reportSpotBtn" class="small danger" style="margin-left:auto">Rapporter et problem</button>
         <button id="closeInfoBtn" class="small">Luk</button>
-        <button id="reportSpotBtn" class="small danger" style="margin-left:auto;">Rapporter et problem</button>
       </div>
     </div>
   </div>
 
   <!-- Rapport modal -->
-  <div id="reportModal" class="modal hidden">
+  <div id="reportModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
     <div class="modalInner">
-      <h4>Rapporter et problem</h4>
-      <label>Navn <input id="reportName" placeholder="Dit navn"/></label>
-      <label>Email <input id="reportEmail" placeholder="Din email"/></label>
+      <h4 id="reportTitle">Rapporter et problem</h4>
+      <label>Navn <input id="reportName" placeholder="Dit navn" /></label>
+      <label>Email <input id="reportEmail" placeholder="Din email" /></label>
       <label>Problem <textarea id="reportProblem" placeholder="Beskriv problemet" rows="3"></textarea></label>
       <div class="row">
         <button id="cancelReportBtn" class="small">Annuller</button>
@@ -84,8 +88,9 @@
   </div>
 
   <!-- Fejl på siden knap -->
-  <button id="reportSiteBtn" class="floatingReportBtn">!</button>
+  <button id="reportSiteBtn" class="floatingReportBtn" title="Rapporter fejl på siden">!</button>
 
+  <!-- Scripts: Leaflet, Axios, EmailJS, App -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
