@@ -18,7 +18,12 @@ if (navigator.geolocation) {
 }
   document.addEventListener("DOMContentLoaded", () => {
   loadSpots();   // henter gemte spots fra localStorage
- 
+
+    document.addEventListener("DOMContentLoaded", () => {
+  loadSpots();   // henter gemte spots fra localStorage
+  // resten af din init-kode...
+      
+});
 });
   // ----------------------
   // EmailJS config (fra dig)
@@ -312,6 +317,7 @@ if (navigator.geolocation) {
 
     spots.push(spot);
 saveSpots();
+    saveSpots();
   });
 
   // ----------------------
@@ -496,5 +502,17 @@ function loadSpots() {
     spots = JSON.parse(data);
     renderList();
     renderMarkers();
+    
+  function saveSpots() {
+  localStorage.setItem("spots", JSON.stringify(spots));
+}
+
+function loadSpots() {
+  const data = localStorage.getItem("spots");
+  if (data) {
+    spots = JSON.parse(data);
+    renderList();
+    renderMarkers();
   }
+}
 }
