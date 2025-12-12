@@ -2,7 +2,22 @@
 document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener("DOMContentLoaded", () => {
   // ... din eksisterende map-init
-
+// Spørg om geolocation med det samme
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      userLat = latitude;
+      userLng = longitude;
+      map.setView([latitude, longitude], 14);
+      showUserLocation(latitude, longitude);
+      renderNearby();
+    },
+    (err) => {
+      console.warn("Bruger afviste eller fejl i geolocation", err);
+    }
+  );
+}
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
