@@ -1,5 +1,24 @@
 // script.js — fuld version (erstat din gamle file med denne)
 document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener("DOMContentLoaded", () => {
+  // ... din eksisterende map-init
+
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        userLat = latitude;
+        userLng = longitude;
+        map.setView([latitude, longitude], 14);
+        showUserLocation(latitude, longitude);
+        renderNearby();
+      },
+      (err) => {
+        console.warn("Bruger afviste eller fejl i geolocation", err);
+      }
+    );
+  }
+});
   // ----------------------
   // EmailJS config (fra dig)
   // ----------------------
